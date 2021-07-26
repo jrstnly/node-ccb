@@ -29,7 +29,7 @@ export class CCB {
 	constructor() {
 		this.auth.pipe(skip(1)).subscribe((data) => {
 			this.config.dataSetter(data);
-			console.log(data);
+			//console.log(data);
 		})
 	}
 

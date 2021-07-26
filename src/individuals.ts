@@ -22,6 +22,6 @@ export class Individuals {
 	public async get(id: string | number) {
 		await this.tokenRefresh();
 		const data: any = await getJSON(`/individuals/${id}`, this.config, this.auth);
-		console.log(data);
+		return data;
 	}
 }

@@ -37,7 +37,8 @@ try {
 	});
 	console.log(connection);
 
-	ccb.individuals.get('3151');
+	const individual = await ccb.individuals.get('3151');
+	console.log(individual);
 
 	//ccb.updateAuthorizationCode(process.env.CCB_CODE || '');
 } catch(e) {
