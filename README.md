@@ -40,7 +40,7 @@ try {
 	console.log(e);
 }
 ```
-[Full Sample Code](https://github.com/jrstnly/node-ccb/tree/main/sample)
+[Full Sample Code](https://github.com/jrstnly/node-ccb/blob/main/sample/src/index.ts)
 
 ## Methods
 
