@@ -94,19 +94,19 @@ export class CCB {
 	}
 
 	private async getTokenFromAuthCode() {
-		const data = await postJSON('https://api.ccbchurch.com/oauth/token', {
+		const response = await postJSON('https://api.ccbchurch.com/oauth/token', {
 			grant_type: 'client_credentials',
 			subdomain: this.config.church,
 			client_id: this.config.client,
 			client_secret: this.config.secret,
 			code: this.auth.getValue().code,
 		}, this.config, this.auth);
-		const expires = data.expires_in - (60 * 5); // Take 5 minutes off expiration time so that we never try to use an expired token
+		const expires = response.data.expires_in - (60 * 5); // Take 5 minutes off expiration time so that we never try to use an expired token
 		const now = DateTime.now();
 		const expiration = now.plus({ seconds: expires }).toISO();
 
 		const auth: AuthData = {
-			accessToken: data.access_token,
+			accessToken: response.data.access_token,
 			tokenExpiration: expiration
 		}
 		this.updateAuthDataItem(auth);

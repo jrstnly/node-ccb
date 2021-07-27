@@ -1,5 +1,5 @@
 export interface Response {
 	type: string;
-	data?: string;
+	data?: any;
 	msg?: string;
 }
