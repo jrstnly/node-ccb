@@ -80,6 +80,14 @@ Returns a promise that resolves with the data of the individual requested.
 const individual = await ccb.individuals.get('1');
 ```
 
+##### [individuals.updatePhoto(id: string | number, image: string | Readable): Promise\<individual\>](https://village.ccbchurch.com/documentation/#/individuals/updateIndividualPhoto)
+
+Returns a promise that resolves with the data of the individual that was updated.
+
+```typescript
+const individual = await ccb.individuals.updatePhoto('1', 'https://path.to/new/image.jpg');
+```
+
 
 ## Types
 
