@@ -44,9 +44,18 @@ try {
 
 ## Methods
 
+### Initialization
+##### connect(options: Config): Promise\<Response\>
+
+Attempts to connect to the CCB API and returns a promise that resolves with `{type:'success'}` on successful connection or `{type:'redirect',data:'URLToRedirectTo'}` if a client authorization code is required.
+
+```typescript
+ccb.updateAuthorizationCode(process.env.CCB_CODE || '');
+```
+
 ### Authorization
 
-##### updateAuthorizationCode(code: string)
+##### updateAuthorizationCode(code: string): Response
 
 Updates and saves the client authorization code into the library and database for generating auth tokens.
 
@@ -56,10 +65,35 @@ ccb.updateAuthorizationCode(process.env.CCB_CODE || '');
 
 ### Individuals
 
-##### [individuals.get(id: string | number)](https://village.ccbchurch.com/documentation/#/individuals/readIndividual)
+##### [individuals.get(id: string | number): individual](https://village.ccbchurch.com/documentation/#/individuals/readIndividual)
 
 Returns a promise that resolves with the data of the individual requested.
 
 ```typescript
 const individual = await ccb.individuals.get('1');
+```
+
+
+## Types
+
+#### Config
+```javascript
+	{
+		church: 'village', // CCB subdomain of your church. Required.
+		client: '5a69aef2...', // CCB API UID from when you signed up for APIv2 access. Required.
+		secret: 'e5c3cc06...', // CCB API Secret from when you signed up for APIv2 access. Required.
+		code: 'e9fa51ea...', // Client authorization code received after completion of the first OAuth step. Not required if redirectURI parameter is set.
+		redirectURI: 'https://example.net/oauth/redirect/', //Your redirect url provided to CCB when you signed up for APIv2 access. Not required if code parameter is set.
+		dataGetter: () => { return data; }, // Function to retrieve auth data from storage. Can return promise that resolves with AuthData or AuthData directly. Required.
+		dataSetter: (data) => { storage.write(data) } // Function to save AuthData to storage. Can return a promise for synchronous writes. Required.
+	}
+```
+
+#### Response
+```javascript
+	{
+		type: 'success', // Can be 'success', 'error', or 'redirect'.
+		data: {}, // Response data from function. Can be any data type.
+		msg: 'An error occurred.', // Optional message included in response. Usually only set when type is 'error'.
+	}
 ```
