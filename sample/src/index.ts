@@ -1,5 +1,6 @@
 import { CCB, AuthData } from '@jrstnly/ccb';
 import { Low, JSONFile } from 'lowdb';
+import { createReadStream } from 'fs';
 
 import * as dotenv from "dotenv";
 dotenv.config({ path: '.env' });
@@ -35,9 +36,14 @@ try {
 		dataGetter:dataGetter,
 		dataSetter:dataSetter
 	});
+
 	if (connection.type === 'success') {
-		const individual = await ccb.individuals.get('3151');
-		console.log(individual);
+		//const individual = await ccb.individuals.get('3151');
+		//console.log(individual);
+
+		const status = await ccb.individuals.updatePhoto('69547', 'https://cdn.w600.comps.canstockphoto.com/information-technology-stock-images_csp16318656.jpg');
+		console.log(status);
+
 	} else {
 		console.log(connection);
 	}

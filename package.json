@@ -1,6 +1,6 @@
 {
   "name": "@jrstnly/ccb",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "A Node.js library for intereacting the CCB v2 API.",
   "type": "module",
   "main": "dist/index.js",
@@ -28,11 +28,18 @@
   "homepage": "https://github.com/jrstnly/node-ccb#readme",
   "devDependencies": {
     "@types/luxon": "^1.27.1",
+    "@types/mime-types": "^2.1.0",
+    "@types/mmmagic": "^0.4.30",
+    "@types/uuid": "^8.3.1",
     "typescript": "^4.3.5"
   },
   "dependencies": {
+    "form-data": "^4.0.0",
     "got": "^11.8.2",
     "luxon": "^2.0.1",
-    "rxjs": "^7.2.0"
+    "mime-types": "^2.1.32",
+    "mmmagic": "^0.5.3",
+    "rxjs": "^7.2.0",
+    "uuid": "^8.3.2"
   }
 }

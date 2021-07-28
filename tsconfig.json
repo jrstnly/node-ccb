@@ -5,7 +5,8 @@
 		"target": "es2019",
 		"declaration": true,
 		"strict": true,
-		"outDir": "./dist"
+		"outDir": "./dist",
+		"allowSyntheticDefaultImports": true,
 	},
 	"include": [
 		"src/**/*"
