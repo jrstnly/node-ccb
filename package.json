@@ -1,6 +1,6 @@
 {
   "name": "@jrstnly/ccb",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A Node.js library for intereacting the CCB v2 API.",
   "type": "module",
   "main": "dist/index.js",

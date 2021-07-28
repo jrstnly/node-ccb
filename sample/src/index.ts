@@ -35,10 +35,12 @@ try {
 		dataGetter:dataGetter,
 		dataSetter:dataSetter
 	});
-	console.log(connection);
-
-	const individual = await ccb.individuals.get('3151');
-	console.log(individual);
+	if (connection.type === 'success') {
+		const individual = await ccb.individuals.get('3151');
+		console.log(individual);
+	} else {
+		console.log(connection);
+	}
 
 	//ccb.updateAuthorizationCode(process.env.CCB_CODE || '');
 } catch(e) {

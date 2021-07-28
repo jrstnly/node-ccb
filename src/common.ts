@@ -17,7 +17,7 @@ export function validate(object: any, schema: any) {
 export function getJSON(path: string, config: Config, auth: BehaviorSubject<AuthData>): Promise<Response> {
 	return new Promise(async (resolve, reject) => {
 		try {
-			const base = `https://${config.church}.ccbchurch.com/api`;
+			const base = `https://api.ccbchurch.com`;
 			const url = (/(http(s?)):\/\//i.test(path)) ? path : base+path
 			const token = auth.getValue().accessToken || '';
 			const data = await got(url, {
