@@ -50,7 +50,14 @@ try {
 Attempts to connect to the CCB API and returns a promise that resolves with `{type:'success'}` on successful connection or `{type:'redirect',data:'URLToRedirectTo'}` if a client authorization code is required.
 
 ```typescript
-ccb.updateAuthorizationCode(process.env.CCB_CODE || '');
+const connection = await ccb.connect({
+	church:process.env.CCB_CHURCH || '',
+	client:process.env.CCB_CLIENT || '',
+	secret:process.env.CCB_SECRET || '',
+	redirectUri: process.env.CCB_REDIRECT_URI || '',
+	dataGetter:dataGetter,
+	dataSetter:dataSetter
+});
 ```
 
 ### Authorization
@@ -65,7 +72,7 @@ ccb.updateAuthorizationCode(process.env.CCB_CODE || '');
 
 ### Individuals
 
-##### [individuals.get(id: string | number): individual](https://village.ccbchurch.com/documentation/#/individuals/readIndividual)
+##### [individuals.get(id: string | number): Promise\<individual\>](https://village.ccbchurch.com/documentation/#/individuals/readIndividual)
 
 Returns a promise that resolves with the data of the individual requested.
 
