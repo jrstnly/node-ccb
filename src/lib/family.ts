@@ -2,7 +2,8 @@ import { BehaviorSubject, Observable } from 'rxjs';
 
 import { Readable } from 'stream';
 
-import { validate, getJSON, postJSON, uploadPhoto, defaultIndividual } from '../common.js';
+import { validate, getJSON, postJSON, uploadPhoto } from '../common.js';
+import { defaultIndividual } from '../defaults.js';
 import { Config } from '../interfaces/config.js';
 import { AuthData } from '../interfaces/auth-data.js';
 
@@ -13,7 +14,7 @@ export class Family {
 	private id: string | number;
 
 	constructor(id: string | number, config: Config, auth: BehaviorSubject<AuthData>, refresh:() => Promise<void>) {
-		this.id = id;
+		this.id = (typeof id === "string") ? parseInt(id) : id;
 		this.tokenRefresh = refresh;
 		this.config = config;
 		this.auth = auth;

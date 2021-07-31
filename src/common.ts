@@ -16,8 +16,8 @@ import mmm from 'mmmagic';
 const { Magic, MAGIC_MIME_TYPE } = mmm;
 
 export function validate(object: any, schema: any) {
-	return Object.keys(schema).filter(key => !schema[key](object[key])).map(key =>
-		new Error(`Required parameter "${key}" is empty.`)
+	return Object.keys(schema).filter(key => !schema[key](object[key], object)).map(key =>
+		new Error(`Required parameter "${key}" is invalid.`)
 	);
 }
 
@@ -173,54 +173,4 @@ function detectMimetype(file: string): Promise<Response> {
 			resolve({type: 'success', data: result});
 		});
 	});
-}
-
-export const defaultIndividual = {
-	active: true,
-	first_name: "",
-	last_name: "",
-	middle_name: "",
-	legal_first_name: "",
-	prefix: "",
-	suffix: "",
-	gender: "",
-	birthday: "",
-	anniversary: "",
-	email: "",
-	addresses: {
-		mailing: {
-			city: "",
-			state: "",
-			street: "",
-			country_iso: "",
-			zip: ""
-		}
-	},
-	phone: {
-		home: "",
-		mobile: "",
-		mobile_carrier_id: "",
-		work: ""
-	},
-	preferred_number: "NONE",
-	family_position: "PRIMARY_CONTACT",
-	marital_status: "",
-	baptized: "",
-	baptized_date: "",
-	baptized_note: "",
-	deceased: "",
-	allergies: "",
-	confirmed_no_allergies: "NOT_SPECIFIED",
-	membership_type_id: 1,
-	membership_start_date: "",
-	campus_id: 1,
-	church_service: [""],
-	school_id: "",
-	school_grade_id: "",
-	barcode: "",
-	listed: true,
-	imited_access_user: true,
-	reason_left_id: "",
-	cid: "",
-	custom_fields: []
 }

@@ -47,11 +47,11 @@ try {
 		//const individual = await ccb.individual('73300').updatePhoto('https://cdn.w600.comps.canstockphoto.com/information-technology-stock-images_csp16318656.jpg');
 		//console.log(individual);
 
-		const individual = await ccb.individuals.add({
-			first_name: "Testing1",
-			last_name: "Account2",
-		});
-		console.log(individual);
+		//const individual = await ccb.individuals.add({
+		//	first_name: "Testing1",
+		//	last_name: "Account2",
+		//});
+		//console.log(individual);
 
 		//const individual = await ccb.family('35763').addMember({
 		//	first_name: "Child14",
@@ -59,6 +59,12 @@ try {
 		//	family_position: "CHILD"
 		//});
 		///console.log(individual);
+
+		//const note = await ccb.individual('73300').addNote("This is a test note.");
+		//console.log(note);
+
+		const queue = await ccb.individual('73300').addToQueue(321);
+		console.log(queue);
 
 	} else {
 		console.log(connection);

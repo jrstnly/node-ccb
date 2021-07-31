@@ -2,7 +2,8 @@ import { BehaviorSubject, Observable } from 'rxjs';
 
 import { Readable } from 'stream';
 
-import { validate, getJSON, postJSON, putJSON, uploadPhoto, defaultIndividual } from '../common.js';
+import { validate, getJSON, postJSON, putJSON, uploadPhoto } from '../common.js';
+import { defaultIndividual } from '../defaults.js';
 import { Config } from '../interfaces/config.js';
 import { AuthData } from '../interfaces/auth-data.js';
 
