@@ -1,4 +1,4 @@
-import { CCB, AuthData } from '@jrstnly/ccb';
+import { CCB, Config, AuthData } from '@jrstnly/ccb';
 import { Low, JSONFile } from 'lowdb';
 import { createReadStream } from 'fs';
 
@@ -28,7 +28,7 @@ try {
 	db.data ||= defaultAuthData;
 
 	const ccb = new CCB();
-	const connection = await ccb.connect({
+	const connection = await ccb.connect(<Config>{
 		church:process.env.CCB_CHURCH || '',
 		client:process.env.CCB_CLIENT || '',
 		secret:process.env.CCB_SECRET || '',
@@ -38,11 +38,27 @@ try {
 	});
 
 	if (connection.type === 'success') {
-		//const individual = await ccb.individuals.get('3151');
+		//const individuals = await ccb.individuals.get({name:'JR'});
+		//console.log(individuals);
+
+		//const individual = await ccb.individual(3151).get();
 		//console.log(individual);
 
-		const status = await ccb.individuals.updatePhoto('69547', 'https://cdn.w600.comps.canstockphoto.com/information-technology-stock-images_csp16318656.jpg');
-		console.log(status);
+		//const individual = await ccb.individual('73300').updatePhoto('https://cdn.w600.comps.canstockphoto.com/information-technology-stock-images_csp16318656.jpg');
+		//console.log(individual);
+
+		const individual = await ccb.individuals.add({
+			first_name: "Testing1",
+			last_name: "Account2",
+		});
+		console.log(individual);
+
+		//const individual = await ccb.family('35763').addMember({
+		//	first_name: "Child14",
+		//	last_name: "Account",
+		//	family_position: "CHILD"
+		//});
+		///console.log(individual);
 
 	} else {
 		console.log(connection);

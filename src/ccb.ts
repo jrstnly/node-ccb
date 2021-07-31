@@ -7,7 +7,9 @@ import { Config } from './interfaces/config.js';
 import { AuthData } from './interfaces/auth-data.js';
 import { Response } from './interfaces/response.js';
 
-import { Individuals } from './individuals.js';
+import { Individual } from './lib/individual.js';
+import { Individuals } from './lib/individuals.js';
+import { Family } from './lib/family.js';
 
 export class CCB {
 	private auth: BehaviorSubject<AuthData> = new BehaviorSubject<AuthData>({
@@ -29,7 +31,6 @@ export class CCB {
 	constructor() {
 		this.auth.pipe(skip(1)).subscribe((data) => {
 			this.config.dataSetter(data);
-			//console.log(data);
 		})
 	}
 
@@ -89,12 +90,18 @@ export class CCB {
 		}
 	}
 
+	public individual(id: string | number) {
+		return new Individual(id, this.config, this.auth, this.tokenRefresh);
+	}
 	public get individuals() {
 		return new Individuals(this.config, this.auth, this.tokenRefresh);
 	}
+	public family(id: string | number) {
+		return new Family(id, this.config, this.auth, this.tokenRefresh);
+	}
 
 	private async getTokenFromAuthCode() {
-		const response = await postJSON('https://api.ccbchurch.com/oauth/token', {
+		const response = await postJSON('https://api.ccbchurch.com/oauth/token', null, {
 			grant_type: 'client_credentials',
 			subdomain: this.config.church,
 			client_id: this.config.client,

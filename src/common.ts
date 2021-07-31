@@ -21,14 +21,14 @@ export function validate(object: any, schema: any) {
 	);
 }
 
-// helper for getting from ccb api
-export function getJSON(path: string, config: Config, auth: BehaviorSubject<AuthData>): Promise<Response> {
+
+export function getJSON(path: string, params: Record<string, string> | null, config: Config, auth: BehaviorSubject<AuthData>): Promise<Response> {
 	return new Promise(async (resolve, reject) => {
 		try {
-			const base = `https://api.ccbchurch.com`;
-			const url = (/(http(s?)):\/\//i.test(path)) ? path : base+path
+			const url = getURL(path, params);
 			const token = auth.getValue().accessToken || '';
 			const data = await got(url, {
+				method: 'GET',
 				headers: {
 					'Accept': 'application/vnd.ccbchurch.v2+json',
 					'Authorization': `Bearer ${token}`
@@ -40,14 +40,34 @@ export function getJSON(path: string, config: Config, auth: BehaviorSubject<Auth
 		}
 	});
 }
-// helper for posting to ccb api
-export function postJSON(path: string, body: any, config: Config, auth: BehaviorSubject<AuthData>): Promise<Response> {
+
+export function postJSON(path: string, params: Record<string, string> | null, body: any, config: Config, auth: BehaviorSubject<AuthData>): Promise<Response> {
 	return new Promise(async (resolve, reject) => {
 		try {
-			const base = `https://${config.church}.ccbchurch.com/api`;
-			const url = (/(http(s?)):\/\//i.test(path)) ? path : base+path
+			const url = getURL(path, params);
 			const token = auth.getValue().accessToken || '';
-			const data = await got.post(url, {
+			const data = await got(url, {
+				method: 'POST',
+				headers: {
+					'Accept': 'application/vnd.ccbchurch.v2+json',
+					'Authorization': `Bearer ${token}`
+				},
+				json: body,
+			}).json();
+			resolve({type: 'success', data: data});
+		} catch(e) {
+			reject({type: 'error', data: e});
+		}
+	});
+}
+
+export function putJSON(path: string, params: Record<string, string> | null, body: any, config: Config, auth: BehaviorSubject<AuthData>): Promise<Response> {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const url = getURL(path, params);
+			const token = auth.getValue().accessToken || '';
+			const data = await got(url, {
+				method: 'PUT',
 				headers: {
 					'Accept': 'application/vnd.ccbchurch.v2+json',
 					'Authorization': `Bearer ${token}`
@@ -65,8 +85,7 @@ export function postJSON(path: string, body: any, config: Config, auth: Behavior
 export function uploadPhoto(path: string, image: string | Readable, config: Config, auth: BehaviorSubject<AuthData>): Promise<Response> {
 	return new Promise(async (resolve, reject) => {
 		try {
-			const base = `https://api.ccbchurch.com`;
-			const url = (/(http(s?)):\/\//i.test(path)) ? path : base+path
+			const url = getURL(path, null);
 			const token = auth.getValue().accessToken || '';
 			let localPath: string = '';
 
@@ -101,6 +120,16 @@ export function uploadPhoto(path: string, image: string | Readable, config: Conf
 		}
 
 	});
+}
+
+function getURL(path: string, params: Record<string, string> | null): string {
+	const base = `https://api.ccbchurch.com`;
+	let url = (/(http(s?)):\/\//i.test(path)) ? path : base+path
+	if (params) {
+		url += '?'
+		url += new URLSearchParams(params).toString();
+	}
+	return url;
 }
 
 function downloadRemoteFile(url: string): Promise<Response> {
@@ -144,4 +173,54 @@ function detectMimetype(file: string): Promise<Response> {
 			resolve({type: 'success', data: result});
 		});
 	});
+}
+
+export const defaultIndividual = {
+	active: true,
+	first_name: "",
+	last_name: "",
+	middle_name: "",
+	legal_first_name: "",
+	prefix: "",
+	suffix: "",
+	gender: "",
+	birthday: "",
+	anniversary: "",
+	email: "",
+	addresses: {
+		mailing: {
+			city: "",
+			state: "",
+			street: "",
+			country_iso: "",
+			zip: ""
+		}
+	},
+	phone: {
+		home: "",
+		mobile: "",
+		mobile_carrier_id: "",
+		work: ""
+	},
+	preferred_number: "NONE",
+	family_position: "PRIMARY_CONTACT",
+	marital_status: "",
+	baptized: "",
+	baptized_date: "",
+	baptized_note: "",
+	deceased: "",
+	allergies: "",
+	confirmed_no_allergies: "NOT_SPECIFIED",
+	membership_type_id: 1,
+	membership_start_date: "",
+	campus_id: 1,
+	church_service: [""],
+	school_id: "",
+	school_grade_id: "",
+	barcode: "",
+	listed: true,
+	imited_access_user: true,
+	reason_left_id: "",
+	cid: "",
+	custom_fields: []
 }

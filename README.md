@@ -70,22 +70,43 @@ Updates and saves the client authorization code into the library and database fo
 ccb.updateAuthorizationCode(process.env.CCB_CODE || '');
 ```
 
-### Individuals
+### Individual
 
-##### [individuals.get(id: string | number): Promise\<individual\>](https://village.ccbchurch.com/documentation/#/individuals/readIndividual)
+##### [individual(id: string | number).get(): Promise\<individual\>](https://village.ccbchurch.com/documentation/#/individuals/readIndividual)
 
 Returns a promise that resolves with the data of the individual requested.
 
 ```typescript
-const individual = await ccb.individuals.get('1');
+const individual = await ccb.individual('1').get();
 ```
 
-##### [individuals.updatePhoto(id: string | number, image: string | Readable): Promise\<individual\>](https://village.ccbchurch.com/documentation/#/individuals/updateIndividualPhoto)
+##### [individual(id: string | number).updatePhoto(image: string | Readable): Promise\<individual\>](https://village.ccbchurch.com/documentation/#/individuals/updateIndividualPhoto)
 
 Returns a promise that resolves with the data of the individual that was updated.
 
 ```typescript
-const individual = await ccb.individuals.updatePhoto('1', 'https://path.to/new/image.jpg');
+const individual = await ccb.individual('1').updatePhoto('https://path.to/new/image.jpg');
+```
+
+### Individuals
+
+##### [individuals.get(params:Record<string, string>): Promise\<individuals\>](https://village.ccbchurch.com/documentation/#/individuals/readIndividuals)
+
+Returns a promise that resolves with a paginated list of the search results or a paginated list of all individuals if no parameters passed.
+
+```typescript
+const individual = await ccb.individuals.get({name: 'Partial Name'});
+```
+
+##### [individuals.add(individual:Record<string, string>): Promise\<individual\>](https://village.ccbchurch.com/documentation/#/individuals/updateIndividualPhoto)
+
+Returns a promise that resolves with the data of the individual that was created.
+
+```typescript
+const individual = await ccb.individuals.add({
+	first_name: "Test",
+	last_name: "Individual",
+});
 ```
 
 
