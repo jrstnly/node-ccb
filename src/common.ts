@@ -132,6 +132,7 @@ function getURL(path: string, params: Record<string, string> | null): string {
 	return url;
 }
 
+// TODO: Figure out how to stream directly from source to eliminate the need for downloading the file.
 function downloadRemoteFile(url: string): Promise<Response> {
 	return new Promise((resolve, reject) => {
 		if (!existsSync('uploads/')){
