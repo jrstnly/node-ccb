@@ -109,6 +109,28 @@ const individual = await ccb.individuals.add({
 });
 ```
 
+### Family
+
+##### [family(id: string | number).get(): Promise\<family\>](https://village.ccbchurch.com/documentation/#/individuals/readIndividual)
+
+Returns a promise that resolves with the data of the family requested.
+
+```typescript
+const family = await ccb.family('1').get();
+```
+
+##### [family(id: string | number).addMember(individual:Record<string, string>): Promise\<individual\>](https://village.ccbchurch.com/documentation/#/individuals/updateIndividualPhoto)
+
+Returns a promise that resolves with the data of the individual that was created.
+
+```typescript
+const individual = await ccb.family('1').addMember({
+	first_name: "Test",
+	last_name: "Child",
+	family_position: "CHILD"
+});
+```
+
 
 ## Types
 
