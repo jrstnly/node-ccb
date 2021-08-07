@@ -53,18 +53,24 @@ try {
 		//});
 		//console.log(individual);
 
+		//const family = await ccb.family(35763).get();
+		//console.log(family);
+
 		//const individual = await ccb.family('35763').addMember({
-		//	first_name: "Child14",
+		//	first_name: "Child15",
 		//	last_name: "Account",
 		//	family_position: "CHILD"
 		//});
-		///console.log(individual);
+		//console.log(individual);
 
 		//const note = await ccb.individual('73300').addNote("This is a test note.");
 		//console.log(note);
 
-		const queue = await ccb.individual('73300').addToQueue(321);
-		console.log(queue);
+		//const queue = await ccb.individual('73300').addToQueue(321, { note: "This is a test note." });
+		//console.log(queue);
+
+		const events = await ccb.events.get({ per_page: 100, page: 60, range_type: 'ALL' });
+		console.log(events);
 
 	} else {
 		console.log(connection);
