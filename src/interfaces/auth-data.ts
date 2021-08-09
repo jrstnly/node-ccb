@@ -1,5 +1,3 @@
-import { DateTime } from 'luxon';
-
 export interface AuthData {
 	code?: string | null;
 	accessToken?: string | null;

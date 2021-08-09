@@ -5,8 +5,6 @@ import { Readable } from 'stream';
 import { validate } from '../common.js';
 import { defaultIndividual } from '../defaults.js';
 import { Data } from '../data.js';
-import { Config } from '../interfaces/config.js';
-import { AuthData } from '../interfaces/auth-data.js';
 
 export class Events {
 	private data: Data;
