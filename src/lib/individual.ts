@@ -21,9 +21,13 @@ export class Individual {
 	}
 	public updatePhoto(photo: string | Readable) {
 		return new Promise(async (resolve, reject) => {
-			const response: any = await this.data.upload(`/individuals/${this.id}/photo`, photo);
-			if (response.type === "success") resolve(response.data.response);
-			else reject(response);
+			try {
+				const response: any = await this.data.upload(`/individuals/${this.id}/photo`, photo);
+				if (response.type === "success") resolve(response.data.response);
+				else reject(response);
+			} catch (e) {
+				reject(e);
+			}
 		});
 	}
 	public addNote(note: string, options: any = {}) {

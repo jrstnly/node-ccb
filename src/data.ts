@@ -66,7 +66,7 @@ export class Data {
 							}
 
 							error.name = 'CCBError';
-							error.message = `${message}{${response.statusCode}}`;
+							error.message = message;
 						}
 						return error;
 					}

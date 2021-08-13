@@ -1,6 +1,6 @@
 {
   "name": "@jrstnly/ccb",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "description": "A Node.js library for accessing the Church Community Builder v2 API",
   "type": "module",
   "main": "dist/index.js",
