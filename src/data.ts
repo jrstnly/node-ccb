@@ -50,7 +50,7 @@ export class Data {
 									message += `(${key+1}) ${item.message} `;
 								});
 							}
-							if (response.body.errors.messages) {
+							if (response.body.errors?.messages) {
 								if (Array.isArray(response.body.errors.messages)) {
 									response.body.errors.messages.forEach((item: any, key: any) => {
 										message += `(${key+1}) ${item.message} `;
@@ -61,12 +61,11 @@ export class Data {
 							}
 							if (message === "") {
 								if (response.statusCode === 401) message = "Access denied.";
-
-								message += " ";
+								if (response.statusCode === 404) message = "Not found.";
 							}
 
 							error.name = 'CCBError';
-							error.message = message;
+							error.message = `${message}`;
 						}
 						return error;
 					}
@@ -145,8 +144,9 @@ export class Data {
 				resolve({ type: 'success', data: { headers: headers, response: body } });
 			} catch (e) {
 				reject({ type: 'error', msg: `Error uploading photo: ${e.message}` });
+			} finally {
+				if (localPath !== '') unlinkSync(localPath);
 			}
-			if (localPath !== '') unlinkSync(localPath);
 		});
 	}
 
@@ -175,12 +175,14 @@ export class Data {
 	// TODO: Figure out how to stream directly from source to eliminate the need for downloading the file.
 	private downloadRemoteFile(url: string): Promise<Response> {
 		return new Promise((resolve, reject) => {
-			if (!existsSync('uploads/')) {
-				mkdirSync('uploads/');
+			let filePath = this.config.getValue().tmpFilePath || "tmp/"
+			if (!filePath.match(/\/$/)) filePath += "/";
+			if (!existsSync(filePath)) {
+				mkdirSync(filePath);
 			}
 			const filename = uuid.v4();
 			const downloadStream = got.stream(url);
-			const fileWriterStream = createWriteStream(`uploads/${filename}`);
+			const fileWriterStream = createWriteStream(`${filePath}${filename}`);
 
 			downloadStream.on("error", (error) => {
 				reject({ type: 'error', data: `Download failed: ${error.message}` });
@@ -189,13 +191,13 @@ export class Data {
 				reject({ type: 'error', data: `Could not write file to system: ${error.message}` });
 			}).on("finish", async () => {
 				try {
-					const type = await this.detectMimetype(`uploads/${filename}`);
+					const type = await this.detectMimetype(`${filePath}${filename}`);
 					const extension = mime.extension(type.data);
-					rename(`uploads/${filename}`, `uploads/${filename}.${extension}`, () => {
+					rename(`${filePath}${filename}`, `${filePath}${filename}.${extension}`, () => {
 						resolve({
 							type: 'success', data: {
 								type: type.data,
-								path: `uploads/${filename}.${extension}`,
+								path: `${filePath}${filename}.${extension}`,
 							}
 						});
 					});

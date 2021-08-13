@@ -6,6 +6,7 @@ export interface Config {
 	secret: string;
 	code?: string;
 	redirectUri?: string;
+	tmpFilePath?: string;
 	dataGetter: () => Promise<AuthData> | AuthData;
 	dataSetter: (data: AuthData) => Promise<void> | void;
 }
