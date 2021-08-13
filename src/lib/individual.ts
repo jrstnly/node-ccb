@@ -19,9 +19,12 @@ export class Individual {
 		const response: any = await this.data.get(`/individuals/${this.id}`, null);
 		return response.data.response;
 	}
-	public async updatePhoto(photo: string | Readable) {
-		const response: any = await this.data.upload(`/individuals/${this.id}/photo`, photo);
-		return response.data.response;
+	public updatePhoto(photo: string | Readable) {
+		return new Promise(async (resolve, reject) => {
+			const response: any = await this.data.upload(`/individuals/${this.id}/photo`, photo);
+			if (response.type === "success") resolve(response.data.response);
+			else reject(response);
+		});
 	}
 	public addNote(note: string, options: any = {}) {
 		return new Promise(async (resolve, reject) => {
