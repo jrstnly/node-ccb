@@ -50,6 +50,15 @@ export class Data {
 									message += `(${key+1}) ${item.message} `;
 								});
 							}
+							if (response.body.errors.messages) {
+								if (Array.isArray(response.body.errors.messages)) {
+									response.body.errors.messages.forEach((item: any, key: any) => {
+										message += `(${key+1}) ${item.message} `;
+									});
+								} else {
+									message += response.body.errors.messages.message;
+								}
+							}
 							if (message === "") {
 								if (response.statusCode === 401) message = "Access denied.";
 
