@@ -19,6 +19,17 @@ export class Individual {
 		const response: any = await this.data.get(`/individuals/${this.id}`, null);
 		return response.data.response;
 	}
+	public update(individual: any) {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response: any = await this.data.put(`/individuals/${this.id}`, null, individual);
+				if (response.type === "success") resolve(response.data.response);
+				else reject(response);
+			} catch (e) {
+				reject(e);
+			}
+		});
+	}
 	public updatePhoto(photo: string | Readable) {
 		return new Promise(async (resolve, reject) => {
 			try {
