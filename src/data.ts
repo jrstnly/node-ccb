@@ -175,7 +175,7 @@ export class Data {
 	// TODO: Figure out how to stream directly from source to eliminate the need for downloading the file.
 	private downloadRemoteFile(url: string): Promise<Response> {
 		return new Promise((resolve, reject) => {
-			let filePath = this.config.getValue().tmpFilePath || "tmp/"
+			let filePath = this.config.getValue().tmpFilePath || "/tmp"
 			if (!filePath.match(/\/$/)) filePath += "/";
 			if (!existsSync(filePath)) {
 				mkdirSync(filePath);
