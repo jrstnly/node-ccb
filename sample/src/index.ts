@@ -69,8 +69,14 @@ try {
 		//const queue = await ccb.individual('73300').addToQueue(321, { note: "This is a test note." });
 		//console.log(queue);
 
-		const events = await ccb.events.get({ per_page: 100, page: 60, range_type: 'ALL' });
-		console.log(events);
+		//const groups = await ccb.groups.get({ per_page: 100, page: 15 });
+		//console.log(groups);
+
+		const group = await ccb.group('4882').get();
+		console.log(group);
+
+		//const events = await ccb.events.get({ per_page: 100, page: 60, range_type: 'ALL' });
+		//console.log(events);
 
 	} else {
 		console.log(connection);

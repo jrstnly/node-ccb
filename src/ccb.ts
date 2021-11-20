@@ -13,6 +13,8 @@ import { Individual } from './lib/individual.js';
 import { Individuals } from './lib/individuals.js';
 import { Family } from './lib/family.js';
 
+import { Groups } from './lib/groups.js';
+import { Group } from './lib/group.js';
 import { Events } from './lib/events.js';
 
 export class CCB {
@@ -99,6 +101,12 @@ export class CCB {
 	}
 	public family(id: string | number) {
 		return new Family(id, this.data);
+	}
+	public get groups() {
+		return new Groups(this.data);
+	}
+	public group(id: string | number) {
+		return new Group(id, this.data);
 	}
 	public get events() {
 		return new Events(this.data);
