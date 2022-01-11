@@ -19,6 +19,10 @@ export class Individual {
 		const response: any = await this.data.get(`/individuals/${this.id}`, null);
 		return response.data.response;
 	}
+	public async getPrivacySettings() {
+		const response: any = await this.data.get(`/individuals/${this.id}/privacy_settings`, null);
+		return response.data.response;
+	}
 	public update(individual: any) {
 		return new Promise(async (resolve, reject) => {
 			try {
