@@ -143,7 +143,11 @@ export class Data {
 				}));
 				resolve({ type: 'success', data: { headers: headers, response: body } });
 			} catch (e) {
-				reject({ type: 'error', msg: `Error uploading photo: ${e.message}` });
+				if (e instanceof Error) {
+					reject({ type: 'error', msg: `Error uploading photo: ${e.message}` });
+				} else {
+					reject({ type: 'error', msg: `An unknown error ocurred.` });
+				}
 			} finally {
 				if (localPath !== '') unlinkSync(localPath);
 			}
@@ -202,7 +206,11 @@ export class Data {
 						});
 					});
 				} catch (e) {
-					reject({ type: 'error', data: `Error detecting mime type: ${e.message}` });
+					if (e instanceof Error) {
+						reject({ type: 'error', data: `Error detecting mime type: ${e.message}` });
+					} else {
+						reject({ type: 'error', msg: `An unknown error ocurred.` });
+					}
 				}
 			});
 
