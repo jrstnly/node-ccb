@@ -1,7 +1,6 @@
 import { DateTime } from 'luxon';
 import { BehaviorSubject, Observable, interval } from 'rxjs';
 import { skip } from 'rxjs/operators';
-import got from 'got';
 
 import { validate } from './common.js';
 import { Data } from './data.js';
@@ -114,6 +113,7 @@ export class CCB {
 
 	private async getTokenFromAuthCode() {
 		try {
+			const got = (await import("got")).got;
 			let body: any, headers: any;
 			const send = {
 				grant_type: 'client_credentials',

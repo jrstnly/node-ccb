@@ -1,45 +1,55 @@
 {
-  "name": "@jrstnly/ccb",
-  "version": "0.6.2",
-  "description": "A Node.js library for accessing the Church Community Builder v2 API",
-  "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "files": [
-    "/dist"
-  ],
-  "scripts": {
-    "prepare": "npm run build",
-    "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/jrstnly/node-ccb.git"
-  },
-  "keywords": [
-    "CCB"
-  ],
-  "author": "JR Stanley",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/jrstnly/node-ccb/issues"
-  },
-  "homepage": "https://github.com/jrstnly/node-ccb#readme",
-  "devDependencies": {
-    "@types/luxon": "^1.27.1",
-    "@types/mime-types": "^2.1.0",
-    "@types/mmmagic": "^0.4.30",
-    "@types/uuid": "^8.3.1",
-    "typescript": "^4.3.5"
-  },
-  "dependencies": {
-    "form-data": "^4.0.0",
-    "got": "^12.0.1",
-    "luxon": "^2.0.1",
-    "mime-types": "^2.1.32",
-    "mmmagic": "^0.5.3",
-    "rxjs": "^7.2.0",
-    "uuid": "^8.3.2"
-  }
+	"name": "@jrstnly/ccb",
+	"version": "0.6.2",
+	"description": "A Node.js library for accessing the Church Community Builder v2 API",
+	"main": "dist/cjs/index.js",
+	"module": "dist/esm/index.js",
+	"exports": {
+		".": {
+			"import": "./dist/esm/index.js",
+			"require": "./dist/cjs/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"prepare": "npm run build",
+		"build:esm": "tsc -p tsconfig.json",
+		"build:cjs": "tsc -p tsconfig-cjs.json",
+		"build": "rm -fr dist/* && npm run build:esm && npm run build:cjs && ./fixup",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/jrstnly/node-ccb.git"
+	},
+	"keywords": [
+		"CCB"
+	],
+	"author": "JR Stanley",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/jrstnly/node-ccb/issues"
+	},
+	"homepage": "https://github.com/jrstnly/node-ccb#readme",
+	"devDependencies": {
+		"@types/got": "^9.6.12",
+		"@types/luxon": "^3.0.1",
+		"@types/mime-types": "^2.1.1",
+		"@types/mmmagic": "^0.4.30",
+		"@types/node": "^18.8.2",
+		"@types/uuid": "^8.3.4",
+		"tslib": "^2.4.0",
+		"typescript": "^4.8.4"
+	},
+	"dependencies": {
+		"form-data": "^4.0.0",
+		"got": "^12.5.1",
+		"luxon": "^3.0.4",
+		"mime-types": "^2.1.35",
+		"mmmagic": "^0.5.3",
+		"rxjs": "^7.5.7",
+		"uuid": "^9.0.0"
+	}
 }

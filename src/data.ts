@@ -1,5 +1,5 @@
 import { Response } from './interfaces/response.js';
-import { RequestOptions } from './interfaces/request-options';
+import { RequestOptions } from './interfaces/request-options.js';
 import { Config } from './interfaces/config.js';
 import { AuthData } from './interfaces/auth-data.js';
 
@@ -9,79 +9,37 @@ import { BehaviorSubject, Observable, interval } from 'rxjs';
 import { skip } from 'rxjs/operators';
 import { existsSync, mkdirSync, unlinkSync, rename, createReadStream, createWriteStream } from 'fs';
 
-import got from 'got';
 import * as mime from 'mime-types';
 import * as uuid from 'uuid';
 import FormData from 'form-data';
 
-import mmm from 'mmmagic';
+import * as mmm from 'mmmagic';
 const { Magic, MAGIC_MIME_TYPE } = mmm;
+
+let got: any = null;
+let Options: any = null
+let RequestError: any = null;
 
 export class Data {
 	private tokenRefresh: () => Promise<void>;
 	private config: BehaviorSubject<Config>;
 	private auth: BehaviorSubject<AuthData> = new BehaviorSubject<AuthData>({ code: null, accessToken: null, refreshToken: null, tokenExpiration: null });
-	private client: any;
+	private _client: any = null;
 
 	constructor(config: BehaviorSubject<Config>, auth: BehaviorSubject<AuthData>, refresh: () => Promise<void>) {
 		this.tokenRefresh = refresh;
 		this.config = config;
 		this.auth = auth;
-		this.client = got.extend({
-			hooks: {
-				beforeRequest: [
-					async (options) => {
-						if (DateTime.now() >= DateTime.fromISO(this.auth.getValue().tokenExpiration || '1970-01-01')) await this.tokenRefresh();
-						const token = auth.getValue().accessToken || '';
-						options.responseType = 'json';
-						options.headers['accept'] = 'application/vnd.ccbchurch.v2+json';
-						options.headers['authorization'] = `Bearer ${token}`;
-					}
-				],
-				beforeError: [
-					(error) => {
-						let request: any, response: any;
-						({ request, response } = error);
-						if (response && response.body) {
-							let message = "";
-							if (response.body.error) message = response.body.error+' ';
-							if (response.body.messages) {
-								response.body.messages.forEach((item: any, key: any) => {
-									message += `(${key+1}) ${item.message} `;
-								});
-							}
-							if (response.body.errors?.messages) {
-								if (Array.isArray(response.body.errors.messages)) {
-									response.body.errors.messages.forEach((item: any, key: any) => {
-										message += `(${key+1}) ${item.message} `;
-									});
-								} else {
-									message += response.body.errors.messages.message;
-								}
-							}
-							if (message === "") {
-								if (response.statusCode === 401) message = "Access denied.";
-								if (response.statusCode === 404) message = "Not found.";
-							}
-
-							error.name = 'CCBError';
-							error.message = `${message}`;
-						}
-						return error;
-					}
-				]
-			},
-			mutableDefaults: true
-		});
 	}
 
 
 	public get(path: string, params: Record<string, string | number> | null): Promise<Response> {
 		return new Promise(async (resolve, reject) => {
+			const client = await this.getClient();
 			let body: any, headers: any;
 			try {
 				const url = this.getURL(path, params);
-				({ body, headers } = await this.client.get(url));
+				({ body, headers } = await client.get(url));
 				resolve({ type: 'success', data: { headers: headers, response: body } });
 			} catch (e) {
 				reject({ type: 'error', data: e });
@@ -91,10 +49,11 @@ export class Data {
 
 	public post(path: string, params: Record<string, string | number> | null, json: any): Promise<Response> {
 		return new Promise(async (resolve, reject) => {
+			const client = await this.getClient();
 			let body: any, headers: any;
 			try {
 				const url = this.getURL(path, params);
-				({ body, headers } = await this.client.post(url, { json: json }));
+				({ body, headers } = await client.post(url, { json: json }));
 				resolve({ type: 'success', data: { headers: headers, response: body } });
 			} catch (e) {
 				reject({ type: 'error', data: e });
@@ -104,10 +63,11 @@ export class Data {
 
 	public put(path: string, params: Record<string, string | number> | null, json: any): Promise<Response> {
 		return new Promise(async (resolve, reject) => {
+			const client = await this.getClient();
 			let body: any, headers: any;
 			try {
 				const url = this.getURL(path, params);
-				({ body, headers } = await this.client.put(url, { json: json }));
+				({ body, headers } = await client.put(url, { json: json }));
 				resolve({ type: 'success', data: { headers: headers, response: body } });
 			} catch (e) {
 				reject({ type: 'error', data: e });
@@ -119,6 +79,8 @@ export class Data {
 		return new Promise(async (resolve, reject) => {
 			let localPath: string = '';
 			try {
+				const client = await this.getClient();
+
 				let body: any, headers: any;
 				const url = this.getURL(path, null);
 
@@ -137,7 +99,7 @@ export class Data {
 				}
 
 				const formHeaders = form.getHeaders();
-				({ body, headers } = await this.client.post(url, {
+				({ body, headers } = await client.post(url, {
 					headers: formHeaders,
 					body: form,
 				}));
@@ -155,6 +117,64 @@ export class Data {
 	}
 
 
+	private async getClient() {
+		if (this._client) return this._client;
+		else {
+			const _got = await import('got');
+			got = _got.got;
+			Options = _got.Options;
+			RequestError = _got.RequestError;
+
+			this._client = got.extend({
+				hooks: {
+					beforeRequest: [
+						async (options: typeof Options) => {
+							if (DateTime.now() >= DateTime.fromISO(this.auth.getValue().tokenExpiration || '1970-01-01')) await this.tokenRefresh();
+							const token = this.auth.getValue().accessToken || '';
+							options.responseType = 'json';
+							options.headers['accept'] = 'application/vnd.ccbchurch.v2+json';
+							options.headers['authorization'] = `Bearer ${token}`;
+						}
+					],
+					beforeError: [
+						(error: typeof RequestError) => {
+							let request: any, response: any;
+							({ request, response } = error);
+							if (response && response.body) {
+								let message = "";
+								if (response.body.error) message = response.body.error+' ';
+								if (response.body.messages) {
+									response.body.messages.forEach((item: any, key: any) => {
+										message += `(${key+1}) ${item.message} `;
+									});
+								}
+								if (response.body.errors?.messages) {
+									if (Array.isArray(response.body.errors.messages)) {
+										response.body.errors.messages.forEach((item: any, key: any) => {
+											message += `(${key+1}) ${item.message} `;
+										});
+									} else {
+										message += response.body.errors.messages.message;
+									}
+								}
+								if (message === "") {
+									if (response.statusCode === 401) message = "Access denied.";
+									if (response.statusCode === 404) message = "Not found.";
+								}
+	
+								error.name = 'CCBError';
+								error.message = `${message}`;
+							}
+							return error;
+						}
+					]
+				},
+				mutableDefaults: true
+			});
+
+			return this._client;
+		}
+	}
 
 	private getURL(path: string, params: Record<string, string | number> | null): string {
 		const base = `https://api.ccbchurch.com`;
@@ -188,7 +208,7 @@ export class Data {
 			const downloadStream = got.stream(url);
 			const fileWriterStream = createWriteStream(`${filePath}${filename}`);
 
-			downloadStream.on("error", (error) => {
+			downloadStream.on("error", (error: typeof RequestError) => {
 				reject({ type: 'error', data: `Download failed: ${error.message}` });
 			});
 			fileWriterStream.on("error", (error) => {

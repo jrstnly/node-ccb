@@ -1,4 +1,4 @@
-import { AuthData } from './auth-data';
+import { AuthData } from './auth-data.js';
 
 export interface Config {
 	church: string;

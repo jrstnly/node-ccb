@@ -1,29 +1,35 @@
 import { CCB, Config, AuthData } from '@jrstnly/ccb';
-import { Low, JSONFile } from 'lowdb';
 import { createReadStream } from 'fs';
 
 import * as dotenv from "dotenv";
 dotenv.config({ path: '.env' });
 
-const file = 'db.json';
-const adapter = new JSONFile<AuthData>(file);
-const db = new Low<AuthData>(adapter);
-
-const defaultAuthData: AuthData = {
-	code: null,
-	accessToken: null,
-	refreshToken: null,
-	tokenExpiration: null,
-}
-const dataGetter = (): AuthData => {
-	return db.data || defaultAuthData;
-}
-const dataSetter = async (data: AuthData) => {
-	db.data = data;
-	await db.write();
-}
+(async () => {
 
 try {
+	const low = await import('lowdb');
+	const Low = low.Low;
+	const JSONFile = low.JSONFile;
+
+	const file = 'db.json';
+	const adapter = new JSONFile<AuthData>(file);
+	const db = new Low<AuthData>(adapter);
+
+	const defaultAuthData: AuthData = {
+		code: null,
+		accessToken: null,
+		refreshToken: null,
+		tokenExpiration: null,
+	}
+	const dataGetter = (): AuthData => {
+		return db.data || defaultAuthData;
+	}
+	const dataSetter = async (data: AuthData) => {
+		db.data = data;
+		await db.write();
+	}
+
+
 	await db.read()
 	db.data ||= defaultAuthData;
 
@@ -41,8 +47,8 @@ try {
 		//const individuals = await ccb.individuals.get({name:'JR'});
 		//console.log(individuals);
 
-		//const individual = await ccb.individual(3151).get();
-		//console.log(individual);
+		const individual = await ccb.individual(3151).get();
+		console.log(individual);
 
 		//const individual = await ccb.individual('73300').updatePhoto('https://cdn.w600.comps.canstockphoto.com/information-technology-stock-images_csp16318656.jpg');
 		//console.log(individual);
@@ -72,8 +78,8 @@ try {
 		//const groups = await ccb.groups.get({ per_page: 100, page: 15 });
 		//console.log(groups);
 
-		const group = await ccb.group('4882').get();
-		console.log(group);
+		//const group = await ccb.group('4882').get();
+		//console.log(group);
 
 		//const events = await ccb.events.get({ per_page: 100, page: 60, range_type: 'ALL' });
 		//console.log(events);
@@ -86,3 +92,5 @@ try {
 } catch(e) {
 	console.log(e);
 }
+
+})()
