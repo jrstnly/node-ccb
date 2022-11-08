@@ -47,8 +47,8 @@ try {
 		//const individuals = await ccb.individuals.get({name:'JR'});
 		//console.log(individuals);
 
-		const individual = await ccb.individual(3151).get();
-		console.log(individual);
+		//const individual = await ccb.individual(3151).get();
+		//console.log(individual);
 
 		//const individual = await ccb.individual('73300').updatePhoto('https://cdn.w600.comps.canstockphoto.com/information-technology-stock-images_csp16318656.jpg');
 		//console.log(individual);
@@ -83,6 +83,23 @@ try {
 
 		//const events = await ccb.events.get({ per_page: 100, page: 60, range_type: 'ALL' });
 		//console.log(events);
+
+		//const forms = await ccb.forms.get();
+		//console.log(forms)
+
+		//const form = await ccb.form(2073).get();
+		//console.log(JSON.stringify(form));
+
+		const questions = await ccb.form(2073).questions();
+		console.log(JSON.stringify(questions));
+
+		/*
+		const responses = await ccb.form(2073).responses();
+		//console.log(responses);
+		responses.forEach((response: any) => {
+			console.log(JSON.stringify(response))
+		});
+		*/
 
 	} else {
 		console.log(connection);

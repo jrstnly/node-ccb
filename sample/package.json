@@ -7,8 +7,8 @@
 	"scripts": {
 		"reload": "rm -rf dist/ && rm -rf node_modules/ && npm install && npm run build",
 		"start": "npm run start:esm",
-		"start:esm": "node dist/esm/index.js",
-		"start:cjs": "node dist/cjs/index.js",
+		"start:esm": "npm run build && node dist/esm/index.js",
+		"start:cjs": "npm run build && node dist/cjs/index.js",
 		"build:esm": "tsc -p tsconfig.json",
 		"build:cjs": "tsc -p tsconfig-cjs.json",
 		"build": "npm run build:esm && npm run build:cjs && ./fixup",

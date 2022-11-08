@@ -15,6 +15,8 @@ import { Family } from './lib/family.js';
 import { Groups } from './lib/groups.js';
 import { Group } from './lib/group.js';
 import { Events } from './lib/events.js';
+import { Forms } from './lib/forms.js';
+import { Form } from './lib/form.js';
 
 export class CCB {
 	private data: Data;
@@ -109,6 +111,13 @@ export class CCB {
 	}
 	public get events() {
 		return new Events(this.data);
+	}
+
+	public get forms() {
+		return new Forms(this.data);
+	}
+	public form(id: string | number) {
+		return new Form(id, this.data);
 	}
 
 	private async getTokenFromAuthCode() {
