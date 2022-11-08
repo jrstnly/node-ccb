@@ -141,8 +141,14 @@ export class Data {
 							let request: any, response: any;
 							({ request, response } = error);
 							if (response && response.body) {
+								//console.log(response.body);
 								let message = "";
 								if (response.body.error) message = response.body.error+' ';
+								if (response.body.errors) {
+									response.body.errors.forEach((item: any, key: any) => {
+										message += `(${key+1}) ${item.message} `;
+									});
+								}
 								if (response.body.messages) {
 									response.body.messages.forEach((item: any, key: any) => {
 										message += `(${key+1}) ${item.message} `;
