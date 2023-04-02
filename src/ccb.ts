@@ -8,6 +8,8 @@ import { Config } from './interfaces/config.js';
 import { AuthData } from './interfaces/auth-data.js';
 import { Response } from './interfaces/response.js';
 
+import { Church } from './lib/church.js';
+
 import { Individual } from './lib/individual.js';
 import { Individuals } from './lib/individuals.js';
 import { Family } from './lib/family.js';
@@ -92,6 +94,10 @@ export class CCB {
 		} else {
 			return {type: 'error', msg: 'Please specify a valid code.'};
 		}
+	}
+
+	public get church() {
+		return new Church(this.data);
 	}
 
 	public individual(id: string | number) {

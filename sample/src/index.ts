@@ -44,6 +44,12 @@ try {
 	});
 
 	if (connection.type === 'success') {
+		//const church = await ccb.church.get();
+		//console.log(church);
+
+		const mobileCarriers = await ccb.church.mobileCarriers();
+		console.log(mobileCarriers);
+
 		//const individuals = await ccb.individuals.get({name:'JR'});
 		//console.log(individuals);
 
@@ -90,8 +96,8 @@ try {
 		//const form = await ccb.form(2073).get();
 		//console.log(JSON.stringify(form));
 
-		const questions = await ccb.form(2073).questions();
-		console.log(JSON.stringify(questions));
+		//const questions = await ccb.form(2073).questions();
+		//console.log(JSON.stringify(questions));
 
 		/*
 		const responses = await ccb.form(2073).responses();
