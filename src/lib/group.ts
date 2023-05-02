@@ -19,4 +19,9 @@ export class Group {
 		return response.data.response;
 	}
 
+	public async participants(params:Record<string, string> | null = null) {
+		const response: any = await this.data.get(`/groups/${this.id}/members`, params);
+		return response.data.response;
+	}
+
 }
