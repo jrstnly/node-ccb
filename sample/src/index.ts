@@ -47,8 +47,8 @@ try {
 		//const church = await ccb.church.get();
 		//console.log(church);
 
-		const mobileCarriers = await ccb.church.mobileCarriers();
-		console.log(mobileCarriers);
+		//const mobileCarriers = await ccb.church.mobileCarriers();
+		//console.log(mobileCarriers);
 
 		//const individuals = await ccb.individuals.get({name:'JR'});
 		//console.log(individuals);
@@ -75,6 +75,12 @@ try {
 		//});
 		//console.log(individual);
 
+		const added = await ccb.individual(63660).addToGroup(2323);
+		console.log(added);
+
+		//const removed = await ccb.individual(63660).removeFromGroup(2323);
+		//console.log(removed);
+
 		//const note = await ccb.individual('73300').addNote("This is a test note.");
 		//console.log(note);
 
@@ -87,8 +93,8 @@ try {
 		//const group = await ccb.group('4882').get();
 		//console.log(group);
 
-		const participants = await ccb.group('4882').participants();
-		console.log(participants);
+		//const participants = await ccb.group('4882').participants();
+		//console.log(participants);
 
 		//const events = await ccb.events.get({ per_page: 100, page: 60, range_type: 'ALL' });
 		//console.log(events);

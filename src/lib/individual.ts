@@ -41,6 +41,29 @@ export class Individual {
 			}
 		});
 	}
+
+	public addToGroup(group: string | number) {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response: any = await this.data.post(`/groups/${group}/members`, null, { ids: [ this.id ]});
+				resolve(response.data.response);
+			} catch (e) {
+				reject(e);
+			}
+		});
+	}
+
+	public removeFromGroup(group: string | number) {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response: any = await this.data.delete(`/groups/${group}/members`, null, { ids: [ this.id ]});
+				resolve(response.data.response);
+			} catch (e) {
+				reject(e);
+			}
+		});
+	}
+
 	public addNote(note: string, options: any = {}) {
 		return new Promise(async (resolve, reject) => {
 			try {

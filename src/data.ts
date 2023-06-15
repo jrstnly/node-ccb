@@ -75,6 +75,20 @@ export class Data {
 		});
 	}
 
+	public delete(path: string, params: Record<string, string | number> | null, json: any): Promise<Response> {
+		return new Promise(async (resolve, reject) => {
+			const client = await this.getClient();
+			let body: any, headers: any;
+			try {
+				const url = this.getURL(path, params);
+				({ body, headers } = await client.delete(url, { json: json }));
+				resolve({ type: 'success', data: { headers: headers, response: body } });
+			} catch (e) {
+				reject({ type: 'error', data: e });
+			}
+		});
+	}
+
 	public upload(path: string, image: string | Readable): Promise<Response> {
 		return new Promise(async (resolve, reject) => {
 			let localPath: string = '';
