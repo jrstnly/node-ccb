@@ -20,6 +20,8 @@ import { Events } from './lib/events.js';
 import { Forms } from './lib/forms.js';
 import { Form } from './lib/form.js';
 
+import { Search } from './lib/search.js';
+
 export class CCB {
 	private data: Data;
 	private auth: BehaviorSubject<AuthData> = new BehaviorSubject<AuthData>({
@@ -124,6 +126,10 @@ export class CCB {
 	}
 	public form(id: string | number) {
 		return new Form(id, this.data);
+	}
+
+	public search(type: string, config: any = {}) {
+		return new Search(type, config, this.data);
 	}
 
 	private async getTokenFromAuthCode() {

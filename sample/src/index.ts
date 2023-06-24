@@ -1,4 +1,4 @@
-import { CCB, Config, AuthData } from '@jrstnly/ccb';
+import { CCB, Config, AuthData, Search } from '@jrstnly/ccb';
 import { createReadStream } from 'fs';
 
 import * as dotenv from "dotenv";
@@ -75,8 +75,8 @@ try {
 		//});
 		//console.log(individual);
 
-		const added = await ccb.individual(63660).addToGroup(2323);
-		console.log(added);
+		//const added = await ccb.individual(63660).addToGroup(2323);
+		//console.log(added);
 
 		//const removed = await ccb.individual(63660).removeFromGroup(2323);
 		//console.log(removed);
@@ -115,6 +115,9 @@ try {
 			console.log(JSON.stringify(response))
 		});
 		*/
+
+		const search = await ccb.search('individuals').run(Search.filter('equal', 'first_name', 'JR'));
+		console.log(search);
 
 	} else {
 		console.log(connection);
