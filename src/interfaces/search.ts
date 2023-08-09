@@ -20,8 +20,8 @@ export type IndividualConstraintField = 'ability'	| 'age' | 'allergies' | 'anniv
     | 'other_state' | 'other_street' | 'other_zip' | 'pager_phone_number' | 'passion' | 'personality_style' | 'photo' | 'pledge'
     | 'position' | 'process_queue' | 'process_queue_date' | 'reason_left_church' | 'school' | 'school_grade' | 'significant_event'
     | 'spiritual_gift' | 'spiritual_maturity' | 'sync_id' | 'transaction_amount' | 'udf_date_1' | 'udf_date_2' | 'udf_date_3'
-    | 'udf_date_4' | 'udf_date_5' | 'udf_date_6' | 'udf_pulldow_1' | 'udf_pulldow_2' | 'udf_pulldow_3' | 'udf_pulldow_4'
-    | 'udf_pulldow_5' | 'udf_pulldow_6' | 'udf_text_1' | 'udf_text_10' | 'udf_text_11' | 'udf_text_12' | 'udf_text_2' | 'udf_text_3'
+    | 'udf_date_4' | 'udf_date_5' | 'udf_date_6' | 'udf_pulldown_1' | 'udf_pulldown_2' | 'udf_pulldown_3' | 'udf_pulldown_4'
+    | 'udf_pulldown_5' | 'udf_pulldown_6' | 'udf_text_1' | 'udf_text_10' | 'udf_text_11' | 'udf_text_12' | 'udf_text_2' | 'udf_text_3'
     | 'udf_text_4' | 'udf_text_5' | 'udf_text_6' | 'udf_text_7' | 'udf_text_8' | 'udf_text_9' | 'work_city' | 'work_country'
     | 'work_state' | 'work_street' | 'work_zip';
 
