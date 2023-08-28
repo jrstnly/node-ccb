@@ -140,6 +140,24 @@ export class Data {
 			RequestError = _got.RequestError;
 
 			this._client = got.extend({
+				retry: {
+					limit: 2,
+					methods: [
+						'GET',
+						'POST',
+						'PUT',
+						'HEAD',
+						'DELETE',
+						'OPTIONS',
+						'TRACE'
+					],
+					statusCodes: [
+						429
+					],
+					maxRetryAfter: undefined,
+					backoffLimit: Number.POSITIVE_INFINITY,
+					noise: 100
+				},
 				hooks: {
 					beforeRequest: [
 						async (options: typeof Options) => {
