@@ -164,7 +164,7 @@ export class CCB {
 			console.log(e);
 		}
 	}
-	private updateAuthDataItem(obj: AuthData | Record<string, string>): void {
+	public updateAuthDataItem(obj: AuthData | Record<string, string>): void {
 		const auth = { ...this.auth.getValue(), ...obj };
 		this.auth.next(auth);
 	}
