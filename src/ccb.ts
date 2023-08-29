@@ -41,7 +41,7 @@ export class CCB {
 	});
 
 	constructor() {
-		this.data = new Data(this.config, this.auth, this.getTokenFromAuthCode);
+		this.data = new Data(this.config, this.auth, this.getTokenFromAuthCode, this.updateAuthDataItem);
 		this.auth.pipe(skip(1)).subscribe((data) => {
 			this.config.getValue().dataSetter(data);
 		})
@@ -164,7 +164,7 @@ export class CCB {
 			console.log(e);
 		}
 	}
-	public updateAuthDataItem(obj: AuthData | Record<string, string>): void {
+	private updateAuthDataItem(obj: AuthData | Record<string, string>): void {
 		const auth = { ...this.auth.getValue(), ...obj };
 		this.auth.next(auth);
 	}

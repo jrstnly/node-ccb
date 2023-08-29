@@ -22,12 +22,14 @@ let RequestError: any = null;
 
 export class Data {
 	private tokenRefresh: () => Promise<void>;
+	private updateAuthDataItem: (obj: AuthData | Record<string, string>) => void;
 	private config: BehaviorSubject<Config>;
 	private auth: BehaviorSubject<AuthData> = new BehaviorSubject<AuthData>({ code: null, accessToken: null, refreshToken: null, tokenExpiration: null });
 	private _client: any = null;
 
-	constructor(config: BehaviorSubject<Config>, auth: BehaviorSubject<AuthData>, refresh: () => Promise<void>) {
+	constructor(config: BehaviorSubject<Config>, auth: BehaviorSubject<AuthData>, refresh: () => Promise<void>, update: (obj: AuthData | Record<string, string>) => void) {
 		this.tokenRefresh = refresh;
+		this.updateAuthDataItem = update;
 		this.config = config;
 		this.auth = auth;
 	}
