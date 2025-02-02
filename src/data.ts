@@ -92,6 +92,8 @@ export class Data {
 	}
 
 	public upload(path: string, image: string | Readable): Promise<Response> {
+		return new Promise(async (resolve, reject) => reject());
+		/*
 		return new Promise(async (resolve, reject) => {
 			let localPath: string = '';
 			try {
@@ -130,6 +132,7 @@ export class Data {
 				if (localPath !== '') unlinkSync(localPath);
 			}
 		});
+		*/
 	}
 
 
@@ -235,7 +238,7 @@ export class Data {
 
 		return n;
 	}
-
+/*
 	// TODO: Figure out how to stream directly from source to eliminate the need for downloading the file.
 	private downloadRemoteFile(url: string): Promise<Response> {
 		return new Promise((resolve, reject) => {
@@ -287,5 +290,5 @@ export class Data {
 			});
 		});
 	}
-
+*/
 }
