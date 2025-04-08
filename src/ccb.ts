@@ -134,7 +134,8 @@ export class CCB {
 
 	private async getTokenFromAuthCode() {
 		try {
-			const got = (await import("got")).got;
+			const gotModule = await import("got");
+			const got = gotModule.default;
 			let body: any, headers: any;
 			const send = {
 				grant_type: 'client_credentials',
@@ -143,20 +144,30 @@ export class CCB {
 				client_secret: this.config.getValue().secret,
 				code: this.auth.getValue().code,
 			};
-			({ body, headers } = await got('https://api.ccbchurch.com/oauth/token', {
-				method: 'POST',
-				responseType: 'json',
+			({ body, headers } = await got.post('https://api.ccbchurch.com/oauth/token', {
+				body: JSON.stringify(send),
 				headers: {
-					'Accept': 'application/vnd.ccbchurch.v2+json'
-				},
-				json: send,
+					'Accept': 'application/vnd.ccbchurch.v2+json',
+					'Content-Type': 'application/json'
+				}
 			}));
-			const expires = body.expires_in - (60 * 5); // Take 5 minutes off expiration time so that we never try to use an expired token
+
+			const data = JSON.parse(body);
+			
+			// Ensure expires_in is a valid number
+			const expiresIn = data.expires_in ? parseInt(data.expires_in, 10) : 3600; // Default to 1 hour if not provided
+			const expires = expiresIn - (60 * 5); // Take 5 minutes off expiration time so that we never try to use an expired token
+			
+			// Ensure expires is a valid number
+			if (isNaN(expires) || expires <= 0) {
+				throw new Error(`Invalid expiration time: ${body.expires_in}`);
+			}
+			
 			const now = DateTime.now();
 			const expiration = now.plus({ seconds: expires }).toISO();
 
 			const auth: AuthData = {
-				accessToken: body.access_token,
+				accessToken: data.access_token,
 				tokenExpiration: expiration
 			}
 			this.updateAuthDataItem(auth);
