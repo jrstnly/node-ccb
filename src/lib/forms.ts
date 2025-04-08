@@ -2,9 +2,9 @@ import { BehaviorSubject, Observable } from 'rxjs';
 
 import { Readable } from 'stream';
 
-import { validate } from '../common';
-import { defaultIndividual } from '../defaults';
-import { Data } from '../data';
+import { validate } from '../common.js';
+import { defaultIndividual } from '../defaults.js';
+import { Data } from '../data.js';
 
 export class Forms {
 	private data: Data;

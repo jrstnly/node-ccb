@@ -56,7 +56,7 @@ try {
 		//const individual = await ccb.individual(3151).get();
 		//console.log(individual);
 
-		//const individual = await ccb.individual('73300').updatePhoto('https://cdn.w600.comps.canstockphoto.com/information-technology-stock-images_csp16318656.jpg');
+		//const individual = await ccb.individual('73757').updatePhoto('https://cultivatedculture.com/wp-content/uploads/2019/12/LinkedIn-Profile-Picture-Example-Tynan-Allan.jpeg');
 		//console.log(individual);
 
 		//const individual = await ccb.individuals.add({
@@ -116,8 +116,10 @@ try {
 		});
 		*/
 
+		/*
 		const search = await ccb.search('individuals').run(Search.filter('equal', 'first_name', 'JR'));
 		console.log(search);
+		*/
 
 	} else {
 		console.log(connection);
