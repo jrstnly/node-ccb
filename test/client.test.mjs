@@ -46,6 +46,7 @@ function client(stored = {}, config = {}) {
 		client: 'id',
 		secret: 'secret',
 		redirectUri: 'https://app.example/callback',
+		grantType: 'authorization_code',
 		dataGetter: () => stored,
 		dataSetter: (data) => {
 			saved.push(data);
@@ -122,14 +123,14 @@ test('connect returns a redirect when the stored grant is no longer valid', asyn
 	const { ccb, saved } = client({ refreshToken: 'spent' });
 	const stored = { refreshToken: 'spent' };
 	handler = () => ({ status: 401, body: { error: 'invalid_grant', error_description: 'revoked' } });
-	const result = await ccb.connect({ church: 'demo', client: 'id', secret: 'secret', redirectUri: 'https://app.example/callback', dataGetter: () => stored, dataSetter: (d) => saved.push(d) });
+	const result = await ccb.connect({ church: 'demo', client: 'id', secret: 'secret', redirectUri: 'https://app.example/callback', grantType: 'authorization_code', dataGetter: () => stored, dataSetter: (d) => saved.push(d) });
 	assert.equal(result.type, 'redirect');
 	assert.match(result.data, /\/oauth\/authorize\?/);
 	assert.equal(saved.at(-1).refreshToken, null);
 });
 
-test('legacy client_credentials grant re-sends the stored code', async () => {
-	const { auth, saved } = client({ code: 'legacy' }, { grantType: 'client_credentials' });
+test('default client_credentials grant re-sends the stored code and keeps it', async () => {
+	const { auth, saved } = client({ code: 'legacy' }, { grantType: undefined });
 	handler = () => ({ body: { access_token: 'a', expires_in: 7200 } });
 	await auth.load();
 	await auth.token();

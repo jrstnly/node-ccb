@@ -57,6 +57,15 @@ export class Auth {
 		return this.config.sandbox ? HOSTS.sandbox : HOSTS.production;
 	}
 
+	/**
+	 * The default grant re-sends the stored code for every token (`client_credentials`), which is what
+	 * existing integrations rely on. The documented single-use code plus rotating refresh token flow is
+	 * opt-in through `grantType: 'authorization_code'`.
+	 */
+	private get legacyGrant(): boolean {
+		return this.config.grantType !== 'authorization_code';
+	}
+
 	/** Whether there is anything to obtain a token with. */
 	public get hasCredentials(): boolean {
 		return !!(this.data.code || this.data.refreshToken);
@@ -111,7 +120,7 @@ export class Auth {
 		let send: Record<string, string>;
 		let used: 'code' | 'refreshToken';
 
-		if (this.config.grantType === 'client_credentials') {
+		if (this.legacyGrant) {
 			if (!this.data.code) throw new CCBAuthError('No authorization code available.');
 			send = { grant_type: 'client_credentials', ...base, code: this.data.code };
 			used = 'code';
@@ -151,7 +160,7 @@ export class Auth {
 			const code = body && typeof body === 'object' ? body.error : undefined;
 			const description = (body && typeof body === 'object' && (body.error_description || body.error)) || `HTTP ${response.statusCode}`;
 			// The code or refresh token is spent or revoked; drop it so that we do not keep retrying it.
-			if (code === 'invalid_grant' && this.config.grantType !== 'client_credentials') {
+			if (code === 'invalid_grant' && !this.legacyGrant) {
 				await this.update({ [used]: null, accessToken: null, tokenExpiration: null });
 			}
 			throw new CCBAuthError(`Unable to obtain access token: ${description}`, { code, status: response.statusCode, body });
@@ -168,7 +177,7 @@ export class Auth {
 		if (body.refresh_token) {
 			next.refreshToken = body.refresh_token;
 			// Authorization codes are single-use; once we hold a refresh token the code is dead weight.
-			if (this.config.grantType !== 'client_credentials') next.code = null;
+			if (!this.legacyGrant) next.code = null;
 		}
 		await this.update(next);
 		return body.access_token;

@@ -44,13 +44,13 @@ try {
 
 ### How authentication works
 
-The library follows the [documented OAuth 2.0 authorization code flow](https://docs.pushpay.io/chms-v2/docs/getting-started):
+By default the library sends the stored authorization code with `grant_type: 'client_credentials'` every time it needs an access token (tokens last two hours and are renewed automatically). The code is long-lived, so it only has to be obtained once per church. This is the behaviour of every previous version and is verified against the live API.
 
-1. The authorization code is exchanged once for an access token (valid two hours) and a refresh token. Codes are single-use, so the stored code is cleared after the exchange.
-2. When the access token expires it is refreshed automatically. Refresh tokens are also single-use: every refresh returns a new pair and revokes the old one. The new pair is written through **dataSetter** before it is used.
+The [Pushpay documentation](https://docs.pushpay.io/chms-v2/docs/getting-started) describes an authorization code flow with rotating refresh tokens. To use it, pass `grantType: 'authorization_code'` together with the `redirectUri` used during authorization:
+
+1. The code is exchanged once for an access token and a refresh token, then cleared, because it is single-use.
+2. Each refresh returns a new pair and revokes the old one. The new pair is written through **dataSetter** before it is used, so **dataSetter** must persist reliably.
 3. If the stored code or refresh token is rejected (`invalid_grant`), it is cleared and **connect()** returns a `redirect` so the church can authorize again.
-
-**Your dataSetter must persist reliably.** Losing a refresh token means the church has to re-authorize. If several processes share one set of credentials, only one of them should be refreshing; the others should read the stored tokens.
 
 Additional connect options:
 
@@ -60,7 +60,7 @@ Additional connect options:
 | `state` | Value echoed back to your redirect URI for CSRF protection. |
 | `identityAuth` | Use Identity Auth so that calls act as the signed-in individual. |
 | `sandbox` | Use the sandbox servers (`beta-oauth.ccbchurch.com` / `api-beta.ccbchurch.com`). |
-| `grantType` | Set to `'client_credentials'` to keep the pre-0.13 behaviour of re-sending the stored code for every token. |
+| `grantType` | `'client_credentials'` (default) or `'authorization_code'`. See above. |
 | `maxRetries` | Retries for rate-limited requests. Defaults to 3. |
 | `timeout` | Request timeout in milliseconds. Defaults to 60000. |
 

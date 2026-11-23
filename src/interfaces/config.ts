@@ -20,9 +20,14 @@ export interface Config {
 	/** Use the sandbox servers instead of production. Sandbox credentials only work against sandbox. */
 	sandbox?: boolean;
 	/**
-	 * OAuth grant used to obtain tokens. `authorization_code` (default) is the documented flow with
-	 * rotating refresh tokens. `client_credentials` keeps the behaviour of versions before 0.13, where
-	 * the stored code is re-sent every time a token is needed.
+	 * OAuth grant used to obtain tokens.
+	 *
+	 * `client_credentials` (default) re-sends the stored code every time a token is needed. The code
+	 * is long-lived and no redirect URI is involved.
+	 *
+	 * `authorization_code` is the flow in the Pushpay documentation: the code from the redirect is
+	 * single-use and is exchanged for an access token plus a rotating refresh token. Requires
+	 * `redirectUri` to match the one used during authorization.
 	 */
 	grantType?: 'authorization_code' | 'client_credentials';
 	/** How many times a rate-limited (429) request is retried. Defaults to 3. */

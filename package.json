@@ -21,7 +21,8 @@
 		"build": "rm -fr dist/* && npm run build:esm && npm run build:cjs && ./fixup",
 		"generate": "node scripts/generate.mjs",
 		"generate:fetch": "curl -fsSL https://docs.pushpay.io/chms-v2/openapi/chms-api-specs.json -o openapi/chms-api-specs.json && node scripts/generate.mjs",
-		"test": "npm run build && node --test test/*.test.mjs"
+		"test": "npm run build && node --test test/*.test.mjs",
+		"test:live": "npm run build && node test/live.mjs"
 	},
 	"repository": {
 		"type": "git",
