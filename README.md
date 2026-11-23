@@ -1,8 +1,8 @@
 # Node CCB library
 
-NodeJS library for accessing the Church Community Builder v2 API
+NodeJS library for accessing the Pushpay ChMS (Church Community Builder) v2 API
 
-[CCB v2 API Documentation](https://village.ccbchurch.com/documentation)
+[ChMS v2 API Documentation](https://docs.pushpay.io/chms-v2/docs/getting-started) · [Endpoint reference for this library](docs/endpoints.md)
 
 *This library is currently in an alpha state and should be carefully tested and not actively updated in production. Updates may and likely will introduce breaking changes. This library will be updated as needed for my projects or as time allows. Pull requests are welcome if certain required features are missing.*
 
@@ -10,7 +10,7 @@ NodeJS library for accessing the Church Community Builder v2 API
 
 ### Initialize and Connect
 
-The **connect()** method will return a promise that resolves with `{type:'success'}` on successful connection or `{type:'redirect',data:'URLToRedirectTo'}` if a client authorization code is required. After redirection back to the application, the authorization code can be updated using the **updateAuthorizationCode()** method. If you already have an authorization code, it can also be passed into the connect function directly using the *code* key in the connect parameters object.
+The **connect()** method will return a promise that resolves with `{type:'success'}` on successful connection or `{type:'redirect',data:'URLToRedirectTo'}` if the church still needs to authorize the application. After redirection back to the application, pass the `code` query parameter to **updateAuthorizationCode()** (or pass it to **connect()** using the *code* key).
 
 In order to remain deployment agnostic, getting and saving the auth token data is left up to the user through the **dataGetter** and **dataSetter** parameters. In the sample I am using [lowdb](https://github.com/typicode/lowdb) but any simple object store should work.
 
@@ -42,7 +42,88 @@ try {
 ```
 [Full Sample Code](https://github.com/jrstnly/node-ccb/blob/main/sample/src/index.ts)
 
-## Methods
+### How authentication works
+
+By default the library sends the stored authorization code with `grant_type: 'client_credentials'` every time it needs an access token (tokens last two hours and are renewed automatically). The code is long-lived, so it only has to be obtained once per church. This is the behaviour of every previous version and is verified against the live API.
+
+The [Pushpay documentation](https://docs.pushpay.io/chms-v2/docs/getting-started) describes an authorization code flow with rotating refresh tokens. To use it, pass `grantType: 'authorization_code'` together with the `redirectUri` used during authorization:
+
+1. The code is exchanged once for an access token and a refresh token, then cleared, because it is single-use.
+2. Each refresh returns a new pair and revokes the old one. The new pair is written through **dataSetter** before it is used, so **dataSetter** must persist reliably.
+3. If the stored code or refresh token is rejected (`invalid_grant`), it is cleared and **connect()** returns a `redirect` so the church can authorize again.
+
+Additional connect options:
+
+| Option | Description |
+| --- | --- |
+| `scope` | Scopes to request, as a string or array. Defaults to everything granted to the application. |
+| `state` | Value echoed back to your redirect URI for CSRF protection. |
+| `identityAuth` | Use Identity Auth so that calls act as the signed-in individual. |
+| `sandbox` | Use the sandbox servers (`beta-oauth.ccbchurch.com` / `api-beta.ccbchurch.com`). |
+| `grantType` | `'client_credentials'` (default) or `'authorization_code'`. See above. |
+| `maxRetries` | Retries for rate-limited requests. Defaults to 3. |
+| `timeout` | Request timeout in milliseconds. Defaults to 60000. |
+
+## Full API coverage
+
+Every endpoint in the ChMS v2 OpenAPI specification is available under `ccb.api`, grouped as in the API reference and named after the operation ids used there. Parameters, request bodies and responses are fully typed. See [docs/endpoints.md](docs/endpoints.md) for the complete list.
+
+```typescript
+const me = await ccb.api.session.getMe();
+const individual = await ccb.api.individuals.getIndividual(1);
+const results = await ccb.api.individuals.getIndividuals({ name: 'Smith', per_page: 100 });
+await ccb.api.individuals.updateIndividual(1, { first_name: 'Updated' });
+await ccb.api.groups.addGroupMembers(123, { individual_ids: [1, 2] });
+await ccb.api.files.uploadIndividualFile(1, { file: { data: buffer, filename: 'form.pdf' }, label: 'Signed form' });
+```
+
+Arguments are always in the order: path parameters, request body (if the endpoint takes one), query parameters (if the endpoint takes any).
+
+Groups: `campuses`, `church`, `departments`, `events`, `families`, `files`, `forms`, `groups`, `individuals`, `integrations`, `needs`, `notes`, `processQueues`, `sacraments`, `savedSearches`, `scheduling`, `search`, `session`, `settings`, `templates`, `workflows`.
+
+### Pagination
+
+List endpoints take `page` and `per_page` (25, 50, 75 or 100). **paginate()** walks every page for you:
+
+```typescript
+for await (const group of ccb.paginate((query) => ccb.api.groups.getGroups(query), { per_page: 100 })) {
+	console.log(group.name);
+}
+```
+
+To read the pagination headers yourself, use **request()**, which returns the body together with `pagination` (`page`, `perPage`, `totalPages`, ...) and `rateLimit`:
+
+```typescript
+const { data, pagination, rateLimit } = await ccb.request({ path: '/individuals', query: { page: 2 } });
+```
+
+### Rate limits
+
+The API allows a sustained 1 request per second per endpoint with a burst of 60 (some endpoints are stricter). Requests that receive a 429 are retried automatically after the `retry-after` delay, up to `maxRetries` times. The docs warn that excessive 429s are monitored, so throttle bulk jobs rather than relying on retries.
+
+### Errors
+
+Calls through `ccb.api` and `ccb.request` reject with a `CCBError` carrying `status`, the parsed `body`, and `retryAfter` (for 429s). Token failures reject with a `CCBAuthError`, which also has the OAuth error `code`.
+
+```typescript
+try {
+	await ccb.api.individuals.getIndividual(999999);
+} catch (e) {
+	if (e instanceof CCBError && e.status === 404) { /* not found */ }
+}
+```
+
+### Updating to a new API version
+
+The endpoint classes in `src/generated` are generated from `openapi/chms-api-specs.json`. To pull the latest specification and regenerate:
+
+```bash
+npm run generate:fetch
+```
+
+## Convenience methods
+
+These hand-written helpers predate `ccb.api` and remain available.
 
 ### Initialization
 ##### connect(options: Config): Promise\<Response\>

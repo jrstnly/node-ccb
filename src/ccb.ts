@@ -1,12 +1,12 @@
-import { DateTime } from 'luxon';
-import { BehaviorSubject, Observable, interval } from 'rxjs';
-import { skip } from 'rxjs/operators';
-
 import { validate } from './common.js';
+import { Auth } from './auth.js';
 import { Data } from './data.js';
+import { CCBAuthError } from './errors.js';
 import { Config } from './interfaces/config.js';
-import { AuthData } from './interfaces/auth-data.js';
 import { Response } from './interfaces/response.js';
+import { ApiResponse, RequestConfig } from './interfaces/request.js';
+
+import { Api } from './generated/index.js';
 
 import { Church } from './lib/church.js';
 
@@ -23,78 +23,109 @@ import { Form } from './lib/form.js';
 import { Search } from './lib/search.js';
 
 export class CCB {
+	private auth: Auth;
 	private data: Data;
-	private auth: BehaviorSubject<AuthData> = new BehaviorSubject<AuthData>({
-		code: null,
-		accessToken: null,
-		refreshToken: null,
-		tokenExpiration: null,
-	});
-	private config: BehaviorSubject<Config> = new BehaviorSubject<Config>({
-		church: '',
-		client: '',
-		secret: '',
-		code: '',
-		redirectUri: '',
-		dataGetter: () => { return this.auth.getValue() },
-		dataSetter: () => { },
-	});
+	private _api: Api | null = null;
 
 	constructor() {
-		this.data = new Data(this.config, this.auth, this.getTokenFromAuthCode, this.updateAuthDataItem);
-		this.auth.pipe(skip(1)).subscribe((data) => {
-			this.config.getValue().dataSetter(data);
-		})
+		this.auth = new Auth();
+		this.data = new Data(this.auth);
 	}
 
-	public connect(config: Config): Promise<Response> {
-		return new Promise(async (resolve, reject) => {
-			// Validate and set config parameters
-			const schema: any = {
-				church: (value: string) => value !== '',
-				client: (value: string) => value !== '',
-				secret: (value: string) => value !== ''
-			};
-			this.config.next({ ...this.config.getValue(), ...config });
-			const configErrors = validate(this.config.getValue(), schema);
-			if (configErrors.length > 0) {
-				for (const { message } of configErrors) {
-					console.log(message);
-				}
-				reject({ type: 'error', msg: 'Missing required parameters.' });
+	/**
+	 * Connect to the API. Resolves with `{type:'success'}` once a valid access token is held, or
+	 * `{type:'redirect', data: url}` when the church still has to authorize the application.
+	 */
+	public async connect(config: Config): Promise<Response> {
+		this.auth.configure(config);
+
+		const schema: any = {
+			church: (value: string) => value !== '',
+			client: (value: string) => value !== '',
+			secret: (value: string) => value !== '',
+		};
+		const configErrors = validate(this.auth.config, schema);
+		if (configErrors.length > 0) {
+			throw { type: 'error', msg: `Missing required parameters. ${configErrors.map((e) => e.message).join(' ')}` };
+		}
+
+		await this.auth.load();
+
+		if (this.auth.hasValidToken) return { type: 'success' };
+
+		const redirect = (): Response => ({ type: 'redirect', msg: 'Redirect to get client code.', data: this.auth.authorizeUrl() });
+
+		if (!this.auth.hasCredentials) {
+			if (!this.auth.config.redirectUri) {
+				throw { type: 'error', msg: 'No client code or redirect URI defined. One of these two parameters are required to complete authentication.' };
 			}
+			return redirect();
+		}
 
-			// Get auth settings from storage and set code if defined in config parameters
-			const auth = await this.config.getValue().dataGetter();
-			if (this.config.getValue().code !== '') auth.code = this.config.getValue().code;
-			this.auth.next(auth);
-
-			// Check to see if we have either a redirect URI to complete step 1 of OAuth flow or code to complete step 2
-			if (!this.auth.getValue().code && this.config.getValue().redirectUri === '') {
-				reject({ type: 'error', msg: 'No client code or redirect URI defined. One of these two parameters are required to complete authentication.' });
-			} else if (!this.auth.getValue().code && this.config.getValue().redirectUri !== '') {
-				const redirect = await this.buildAuthRedirectUri();
-				resolve({ type: 'redirect', msg: 'Redirect to get client code.', data: redirect.data });
-			}
-
-			// Check to see if we have a token and confirm it's not expired. If not, get a new one.
-			if (!this.auth.getValue().accessToken || DateTime.now() >= DateTime.fromISO(this.auth.getValue().tokenExpiration || '1970-01-01')) {
-				await this.getTokenFromAuthCode();
-				resolve({ type: 'success' });
-			} else {
-				resolve({ type: 'success' });
-			}
-
-			reject({ type: 'error', msg: 'An unknown error occurred.' });
-		})
+		try {
+			await this.auth.token();
+			return { type: 'success' };
+		} catch (e: any) {
+			// A spent or revoked code/refresh token means the church has to authorize again.
+			if (e instanceof CCBAuthError && e.code === 'invalid_grant' && this.auth.config.redirectUri) return redirect();
+			throw { type: 'error', msg: e?.message || 'An unknown error occurred.', data: e };
+		}
 	}
 
+	/**
+	 * Store the authorization code received on the redirect URI. It is exchanged for tokens on the
+	 * next API call (or the next call to `connect`).
+	 */
 	public updateAuthorizationCode(code: string): Response {
 		if (code !== '') {
-			this.updateAuthDataItem({code: code});
-			return {type: 'success'};
+			this.auth.setCode(code).catch((e) => console.log(e));
+			return { type: 'success' };
 		} else {
-			return {type: 'error', msg: 'Please specify a valid code.'};
+			return { type: 'error', msg: 'Please specify a valid code.' };
+		}
+	}
+
+	/** URL to send a church administrator to in order to authorize the application. */
+	public get authorizationUrl(): string {
+		return this.auth.authorizeUrl();
+	}
+
+	/**
+	 * Every endpoint of the ChMS v2 API, grouped as in the API reference and named after the
+	 * operation ids in the OpenAPI specification, e.g. `ccb.api.individuals.getIndividual(1)`.
+	 */
+	public get api(): Api {
+		if (!this._api) this._api = new Api(this.data);
+		return this._api;
+	}
+
+	/**
+	 * Low-level authenticated request. Returns the parsed body together with the pagination and
+	 * rate limit details from the response headers.
+	 */
+	public request<T = any>(config: RequestConfig): Promise<ApiResponse<T>> {
+		return this.data.request<T>(config);
+	}
+
+	/**
+	 * Iterate over every item of a paginated list endpoint, fetching pages as needed.
+	 *
+	 * ```typescript
+	 * for await (const group of ccb.paginate((query) => ccb.api.groups.getGroups(query), { per_page: 100 })) { ... }
+	 * ```
+	 */
+	public async *paginate<T, Q extends { page?: number; per_page?: number } = { page?: number; per_page?: number }>(
+		fetch: (query: Q) => Promise<T[]>,
+		query?: Q,
+	): AsyncGenerator<T, void, undefined> {
+		const perPage = query?.per_page ?? 25;
+		let page = query?.page ?? 1;
+		while (true) {
+			const items = await fetch({ ...(query as Q), page, per_page: perPage });
+			if (!Array.isArray(items) || items.length === 0) return;
+			yield* items;
+			if (items.length < perPage) return;
+			page++;
 		}
 	}
 
@@ -130,65 +161,5 @@ export class CCB {
 
 	public search(type: string, config: any = {}) {
 		return new Search(type, config, this.data);
-	}
-
-	private async getTokenFromAuthCode() {
-		try {
-			const gotModule = await import("got");
-			const got = gotModule.default;
-			let body: any, headers: any;
-			const send = {
-				grant_type: 'client_credentials',
-				subdomain: this.config.getValue().church,
-				client_id: this.config.getValue().client,
-				client_secret: this.config.getValue().secret,
-				code: this.auth.getValue().code,
-			};
-			({ body, headers } = await got.post('https://api.ccbchurch.com/oauth/token', {
-				body: JSON.stringify(send),
-				headers: {
-					'Accept': 'application/vnd.ccbchurch.v2+json',
-					'Content-Type': 'application/json'
-				}
-			}));
-
-			const data = JSON.parse(body);
-			
-			// Ensure expires_in is a valid number
-			const expiresIn = data.expires_in ? parseInt(data.expires_in, 10) : 3600; // Default to 1 hour if not provided
-			const expires = expiresIn - (60 * 5); // Take 5 minutes off expiration time so that we never try to use an expired token
-			
-			// Ensure expires is a valid number
-			if (isNaN(expires) || expires <= 0) {
-				throw new Error(`Invalid expiration time: ${body.expires_in}`);
-			}
-			
-			const now = DateTime.now();
-			const expiration = now.plus({ seconds: expires }).toISO();
-
-			const auth: AuthData = {
-				accessToken: data.access_token,
-				tokenExpiration: expiration
-			}
-			this.updateAuthDataItem(auth);
-		} catch (e) {
-			console.log(e);
-		}
-	}
-	private updateAuthDataItem(obj: AuthData | Record<string, string>): void {
-		const auth = { ...this.auth.getValue(), ...obj };
-		this.auth.next(auth);
-	}
-	private buildAuthRedirectUri(): Promise<Response> {
-		return new Promise((resolve, reject) => {
-			const params: Record<string, string> = {
-				client_id: this.config.getValue().client,
-				response_type: 'code',
-				redirect_uri: this.config.getValue().redirectUri || '',
-				subdomain: this.config.getValue().church,
-			};
-			const query = new URLSearchParams(params).toString();
-			resolve({ type: 'success', data: `https://oauth.ccbchurch.com/oauth/authorize?${query}` });
-		})
 	}
 }
