@@ -1,6 +1,6 @@
 {
 	"name": "@jrstnly/ccb",
-	"version": "0.13.0",
+	"version": "0.14.0",
 	"description": "A Node.js library for accessing the Pushpay ChMS (Church Community Builder) v2 API",
 	"type": "module",
 	"main": "dist/cjs/index.js",

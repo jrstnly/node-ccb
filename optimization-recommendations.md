@@ -1,6 +1,6 @@
 # CCB API Client Optimization Recommendations
 
-Status as of 0.13.0. Items are kept in their original order; each notes whether it has been addressed.
+Status as of 0.14.0. Items are kept in their original order; each notes whether it has been addressed.
 
 ## 1. HTTP Client Caching and Reuse
 - **Done.** `got` is loaded once and reused by `Data`. It is still loaded with a dynamic `import()` because `got` is ESM-only and the library also ships a CommonJS build.
