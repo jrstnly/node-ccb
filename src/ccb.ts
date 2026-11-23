@@ -4,7 +4,7 @@ import { Data } from './data.js';
 import { CCBAuthError } from './errors.js';
 import { Config } from './interfaces/config.js';
 import { Response } from './interfaces/response.js';
-import { ApiResponse, RequestConfig } from './interfaces/request.js';
+import { ApiResponse, PageQuery, RequestConfig } from './interfaces/request.js';
 
 import { Api } from './generated/index.js';
 
@@ -108,20 +108,18 @@ export class CCB {
 	}
 
 	/**
-	 * Iterate over every item of a paginated list endpoint, fetching pages as needed.
+	 * Iterate over every item of a paginated list endpoint, fetching pages as needed. The callback
+	 * receives the `page` and `per_page` to request; add any filters of your own alongside them.
 	 *
 	 * ```typescript
-	 * for await (const group of ccb.paginate((query) => ccb.api.groups.getGroups(query), { per_page: 100 })) { ... }
+	 * for await (const group of ccb.paginate((page) => ccb.api.groups.getGroups({ name: 'Youth', ...page }), { per_page: 100 })) { ... }
 	 * ```
 	 */
-	public async *paginate<T, Q extends { page?: number; per_page?: number } = { page?: number; per_page?: number }>(
-		fetch: (query: Q) => Promise<T[]>,
-		query?: Q,
-	): AsyncGenerator<T, void, undefined> {
-		const perPage = query?.per_page ?? 25;
-		let page = query?.page ?? 1;
+	public async *paginate<T>(fetch: (page: PageQuery) => Promise<T[]>, options: Partial<PageQuery> = {}): AsyncGenerator<T, void, undefined> {
+		const perPage = options.per_page ?? 25;
+		let page = options.page ?? 1;
 		while (true) {
-			const items = await fetch({ ...(query as Q), page, per_page: perPage });
+			const items = await fetch({ page, per_page: perPage });
 			if (!Array.isArray(items) || items.length === 0) return;
 			yield* items;
 			if (items.length < perPage) return;

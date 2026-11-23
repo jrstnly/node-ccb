@@ -3,7 +3,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 
-import { CCB, CCBError } from '../dist/esm/index.js';
+import { CCB, CCBError, Search } from '../dist/esm/index.js';
 import { Auth } from '../dist/esm/auth.js';
 import { Data } from '../dist/esm/data.js';
 
@@ -153,7 +153,7 @@ test('sends path, query and JSON body, and returns the parsed body', async () =>
 	await ccb.api.groups.addGroupMembers(7, { individual_ids: [1, 2], status: 'member' });
 	assert.equal(requests[1].method, 'POST');
 	assert.equal(requests[1].path, '/groups/7/members');
-	assert.equal(requests[1].search, '?individual_ids=1&individual_ids=2&status=member');
+	assert.equal(requests[1].search, '?individual_ids%5B%5D=1&individual_ids%5B%5D=2&status=member');
 });
 
 test('uploads multipart form fields', async () => {
@@ -215,4 +215,25 @@ test('hand-written resources keep working', async () => {
 	assert.deepEqual(await ccb.individual('5').get(), { path: '/individuals/5', body: '' });
 	assert.deepEqual(await ccb.individual(5).addToGroup(8), { path: '/groups/8/members', body: { ids: [5] } });
 	assert.equal((await ccb.groups.get({ per_page: 100 })).path, '/groups');
+});
+
+test('search honours the inverted flag and lets config override the defaults', async () => {
+	assert.equal(Search.filter('equal', 'first_name', 'Ada').inverted, false);
+	assert.equal(Search.filter('equal', 'first_name', 'Ada', true).inverted, true);
+
+	const { ccb } = client({ accessToken: 't', tokenExpiration: future() });
+	await ccb.auth.load();
+	handler = (r) => ({ body: r.body });
+	const filters = Search.filter('equal', 'first_name', 'Ada', true);
+
+	const defaults = await ccb.search('individuals').run(filters);
+	assert.equal(requests[0].path, '/search/individuals/results');
+	assert.deepEqual(defaults.configuration.filter_profile_type, ['active']);
+	assert.equal(defaults.configuration.include_unlisted, true);
+	assert.equal(defaults.filters.inverted, true);
+
+	const custom = await ccb.search('individuals', { filter_profile_type: ['active', 'inactive'], include_unlisted: false }).run(filters);
+	assert.deepEqual(custom.configuration.filter_profile_type, ['active', 'inactive']);
+	assert.equal(custom.configuration.include_unlisted, false);
+	assert.equal(custom.configuration.include_lau, true);
 });

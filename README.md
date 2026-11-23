@@ -81,14 +81,43 @@ Arguments are always in the order: path parameters, request body (if the endpoin
 
 Groups: `campuses`, `church`, `departments`, `events`, `families`, `files`, `forms`, `groups`, `individuals`, `integrations`, `needs`, `notes`, `processQueues`, `sacraments`, `savedSearches`, `scheduling`, `search`, `session`, `settings`, `templates`, `workflows`.
 
+`session.getMe()` returns 401 for a church-level token, since no individual is signed in. It needs a token obtained with `identityAuth`.
+
+### Array filters
+
+Pass array filters as plain arrays. They are sent in the bracket form the API requires (`statuses[]=WAITING&statuses[]=IN_PROCESS`); the same parameter as a plain repeated key is rejected with a 412.
+
+```typescript
+const waiting = await ccb.api.processQueues.getStepIndividuals({ queue_ids: [320], statuses: ['WAITING'] });
+```
+
+The API silently ignores filter names it does not recognise and returns the unfiltered list, so a misspelled filter does not raise an error.
+
+### File uploads
+
+Endpoints that take a file accept a `Buffer`, a readable stream, or an object with `data`, `filename` and `contentType`. Other form fields are passed alongside it.
+
+```typescript
+await ccb.api.individuals.updateIndividualPhoto(1, { photo: { data: buffer, filename: 'photo.jpg', contentType: 'image/jpeg' } });
+await ccb.api.files.uploadIndividualFile(1, { file: createReadStream('form.pdf'), label: 'Signed form' });
+```
+
+Requests with a file are not retried, because a stream cannot be replayed.
+
 ### Pagination
 
 List endpoints take `page` and `per_page` (25, 50, 75 or 100). **paginate()** walks every page for you:
 
 ```typescript
-for await (const group of ccb.paginate((query) => ccb.api.groups.getGroups(query), { per_page: 100 })) {
+for await (const group of ccb.paginate((page) => ccb.api.groups.getGroups(page), { per_page: 100 })) {
 	console.log(group.name);
 }
+```
+
+The callback receives the `page` and `per_page` to request. Add your own filters alongside them:
+
+```typescript
+ccb.paginate((page) => ccb.api.individuals.getIndividuals({ name: 'Smith', ...page }));
 ```
 
 To read the pagination headers yourself, use **request()**, which returns the body together with `pagination` (`page`, `perPage`, `totalPages`, ...) and `rateLimit`:
@@ -121,6 +150,22 @@ The endpoint classes in `src/generated` are generated from `openapi/chms-api-spe
 npm run generate:fetch
 ```
 
+Where the live API accepts something the published specification leaves out, add it to `openapi/overrides.json` and run `npm run generate`. It currently adds the `queue_ids` filter to `processQueues.getStepIndividuals`.
+
+## Testing
+
+```bash
+npm test
+```
+
+Builds the library and runs the unit tests against a local stand-in for the API. No credentials or network access are needed.
+
+```bash
+npm run test:live
+```
+
+Runs a read-only smoke test against the real API. It only makes GET requests and prints counts and field names, not record contents. Copy `.env-sample` to `.env` and fill in `CCB_CHURCH`, `CCB_CLIENT`, `CCB_SECRET` and `CCB_CODE` first. Tokens are cached in `db.json`; both files are gitignored.
+
 ## Convenience methods
 
 These hand-written helpers predate `ccb.api` and remain available.
@@ -151,9 +196,17 @@ Updates and saves the client authorization code into the library and database fo
 ccb.updateAuthorizationCode(process.env.CCB_CODE || '');
 ```
 
+##### authorizationUrl: string
+
+The URL to send a church administrator to in order to authorize the application. This is the same URL that **connect()** returns in a `redirect` response.
+
+```typescript
+res.redirect(ccb.authorizationUrl);
+```
+
 ### Individual
 
-##### [individual(id: string | number).get(): Promise\<individual\>](https://village.ccbchurch.com/documentation/#/individuals/readIndividual)
+##### [individual(id: string | number).get(): Promise\<individual\>](https://docs.pushpay.io/chms-v2/reference/getindividual)
 
 Returns a promise that resolves with the data of the individual requested.
 
@@ -161,7 +214,7 @@ Returns a promise that resolves with the data of the individual requested.
 const individual = await ccb.individual('1').get();
 ```
 
-##### [individual(id: string | number).updatePhoto(image: string | Readable): Promise\<individual\>](https://village.ccbchurch.com/documentation/#/individuals/updateIndividualPhoto)
+##### [individual(id: string | number).updatePhoto(image: string | Readable): Promise\<individual\>](https://docs.pushpay.io/chms-v2/reference/updateindividualphoto)
 
 Returns a promise that resolves with the data of the individual that was updated.
 
@@ -171,7 +224,7 @@ const individual = await ccb.individual('1').updatePhoto('https://path.to/new/im
 
 ### Individual Methods
 
-##### [individual(id: string | number).update(individual: Record<string, any>): Promise\<individual\>](https://village.ccbchurch.com/documentation/#/individuals/updateIndividual)
+##### [individual(id: string | number).update(individual: Record<string, any>): Promise\<individual\>](https://docs.pushpay.io/chms-v2/reference/updateindividual)
 
 Updates an individual's information and returns a promise that resolves with the updated individual data.
 
@@ -182,7 +235,7 @@ const individual = await ccb.individual('1').update({
 });
 ```
 
-##### [individual(id: string | number).addToGroup(group: string | number): Promise\<response\>](https://village.ccbchurch.com/documentation/#/groups/addGroupMembers)
+##### [individual(id: string | number).addToGroup(group: string | number): Promise\<response\>](https://docs.pushpay.io/chms-v2/reference/addgroupmembers)
 
 Adds an individual to a specified group and returns a promise that resolves with the response data.
 
@@ -190,7 +243,7 @@ Adds an individual to a specified group and returns a promise that resolves with
 const response = await ccb.individual('1').addToGroup('123');
 ```
 
-##### [individual(id: string | number).removeFromGroup(group: string | number): Promise\<response\>](https://village.ccbchurch.com/documentation/#/groups/removeGroupMembers)
+##### [individual(id: string | number).removeFromGroup(group: string | number): Promise\<response\>](https://docs.pushpay.io/chms-v2/reference/deletegroupmembers)
 
 Removes an individual from a specified group and returns a promise that resolves with the response data.
 
@@ -198,7 +251,7 @@ Removes an individual from a specified group and returns a promise that resolves
 const response = await ccb.individual('1').removeFromGroup('123');
 ```
 
-##### [individual(id: string | number).addNote(note: string, options?: NoteOptions): Promise\<response\>](https://village.ccbchurch.com/documentation/#/individuals/addIndividualNote)
+##### [individual(id: string | number).addNote(note: string, options?: NoteOptions): Promise\<response\>](https://docs.pushpay.io/chms-v2/reference/createindividualnote)
 
 Adds a note to an individual's profile and returns a promise that resolves with the response data.
 
@@ -209,7 +262,7 @@ const response = await ccb.individual('1').addNote('This is a note', {
 });
 ```
 
-##### [individual(id: string | number).addToQueue(queue: string | number, options?: QueueOptions): Promise\<response\>](https://village.ccbchurch.com/documentation/#/queues/addQueueIndividual)
+##### [individual(id: string | number).addToQueue(queue: string | number, options?: QueueOptions): Promise\<response\>](https://docs.pushpay.io/chms-v2/reference/addqueueindividual)
 
 Adds an individual to a specified queue and returns a promise that resolves with the response data.
 
@@ -221,7 +274,7 @@ const response = await ccb.individual('1').addToQueue('123', {
 
 ### Individuals
 
-##### [individuals.get(params:Record<string, string>): Promise\<individuals\>](https://village.ccbchurch.com/documentation/#/individuals/readIndividuals)
+##### [individuals.get(params:Record<string, string>): Promise\<individuals\>](https://docs.pushpay.io/chms-v2/reference/getindividuals)
 
 Returns a promise that resolves with a paginated list of the search results or a paginated list of all individuals if no parameters passed.
 
@@ -229,7 +282,7 @@ Returns a promise that resolves with a paginated list of the search results or a
 const individual = await ccb.individuals.get({name: 'Partial Name'});
 ```
 
-##### [individuals.add(individual:Record<string, string>): Promise\<individual\>](https://village.ccbchurch.com/documentation/#/individuals/updateIndividualPhoto)
+##### [individuals.add(individual:Record<string, string>): Promise\<individual\>](https://docs.pushpay.io/chms-v2/reference/createfamily)
 
 Returns a promise that resolves with the data of the individual that was created.
 
@@ -242,7 +295,7 @@ const individual = await ccb.individuals.add({
 
 ### Family
 
-##### [family(id: string | number).get(): Promise\<family\>](https://village.ccbchurch.com/documentation/#/individuals/readIndividual)
+##### [family(id: string | number).get(): Promise\<family\>](https://docs.pushpay.io/chms-v2/reference/getfamily)
 
 Returns a promise that resolves with the data of the family requested.
 
@@ -250,7 +303,7 @@ Returns a promise that resolves with the data of the family requested.
 const family = await ccb.family('1').get();
 ```
 
-##### [family(id: string | number).addMember(individual:Record<string, string>): Promise\<individual\>](https://village.ccbchurch.com/documentation/#/individuals/updateIndividualPhoto)
+##### [family(id: string | number).addMember(individual:Record<string, string>): Promise\<individual\>](https://docs.pushpay.io/chms-v2/reference/createindividual)
 
 Returns a promise that resolves with the data of the individual that was created.
 
@@ -264,7 +317,7 @@ const individual = await ccb.family('1').addMember({
 
 ### Family Methods
 
-##### [family(id: string | number).updatePhoto(photo: string | Readable): Promise\<family\>](https://village.ccbchurch.com/documentation/#/families/updateFamilyPhoto)
+##### [family(id: string | number).updatePhoto(photo: string | Readable): Promise\<family\>](https://docs.pushpay.io/chms-v2/reference/updatefamilyphoto)
 
 Updates a family's photo and returns a promise that resolves with the updated family data.
 
@@ -274,7 +327,7 @@ const family = await ccb.family('1').updatePhoto('https://path.to/new/family/pho
 
 ### Groups
 
-##### [groups.get(params?: Record<string, string | number>): Promise\<groups\>](https://village.ccbchurch.com/documentation/#/groups/readGroups)
+##### [groups.get(params?: Record<string, string | number>): Promise\<groups\>](https://docs.pushpay.io/chms-v2/reference/getgroups)
 
 Returns a promise that resolves with a paginated list of groups. Optional parameters can be passed to filter the results.
 
@@ -282,7 +335,7 @@ Returns a promise that resolves with a paginated list of groups. Optional parame
 const groups = await ccb.groups.get({ name: 'Youth Group' });
 ```
 
-##### [groups.admin(params?: Record<string, string | number>): Promise\<groups\>](https://village.ccbchurch.com/documentation/#/groups/readAdminGroups)
+##### [groups.admin(params?: Record<string, string | number>): Promise\<groups\>](https://docs.pushpay.io/chms-v2/reference/getgroupsadmin)
 
 Returns a promise that resolves with a paginated list of groups where the authenticated user is an administrator. Optional parameters can be passed to filter the results.
 
@@ -292,7 +345,7 @@ const adminGroups = await ccb.groups.admin();
 
 ### Group
 
-##### [group(id: string | number).get(): Promise\<group\>](https://village.ccbchurch.com/documentation/#/groups/readGroup)
+##### [group(id: string | number).get(): Promise\<group\>](https://docs.pushpay.io/chms-v2/reference/getgroup)
 
 Returns a promise that resolves with the data of the group requested.
 
@@ -300,7 +353,7 @@ Returns a promise that resolves with the data of the group requested.
 const group = await ccb.group('123').get();
 ```
 
-##### [group(id: string | number).participants(params?: Record<string, string>): Promise\<participants\>](https://village.ccbchurch.com/documentation/#/groups/readGroupMembers)
+##### [group(id: string | number).participants(params?: Record<string, string>): Promise\<participants\>](https://docs.pushpay.io/chms-v2/reference/getgroupmembers)
 
 Returns a promise that resolves with a paginated list of participants in the group. Optional parameters can be passed to filter the results.
 
@@ -310,7 +363,7 @@ const participants = await ccb.group('123').participants({ status: 'active' });
 
 ### Forms
 
-##### [forms.get(params?: Record<string, string | number>): Promise\<forms\>](https://village.ccbchurch.com/documentation/#/forms/readForms)
+##### [forms.get(params?: Record<string, string | number>): Promise\<forms\>](https://docs.pushpay.io/chms-v2/reference/getforms)
 
 Returns a promise that resolves with a paginated list of forms. Optional parameters can be passed to filter the results.
 
@@ -320,7 +373,7 @@ const forms = await ccb.forms.get({ type: 'registration' });
 
 ### Form
 
-##### [form(id: string | number).get(): Promise\<form\>](https://village.ccbchurch.com/documentation/#/forms/readForm)
+##### [form(id: string | number).get(): Promise\<form\>](https://docs.pushpay.io/chms-v2/reference/getform)
 
 Returns a promise that resolves with the data of the form requested.
 
@@ -328,7 +381,7 @@ Returns a promise that resolves with the data of the form requested.
 const form = await ccb.form('123').get();
 ```
 
-##### [form(id: string | number).questions(params?: Record<string, string>): Promise\<questions\>](https://village.ccbchurch.com/documentation/#/forms/readFormQuestions)
+##### [form(id: string | number).questions(params?: Record<string, string>): Promise\<questions\>](https://docs.pushpay.io/chms-v2/reference/getformquestions)
 
 Returns a promise that resolves with a paginated list of questions in the form. Optional parameters can be passed to filter the results.
 
@@ -336,7 +389,7 @@ Returns a promise that resolves with a paginated list of questions in the form. 
 const questions = await ccb.form('123').questions();
 ```
 
-##### [form(id: string | number).responses(params?: Record<string, string>): Promise\<responses\>](https://village.ccbchurch.com/documentation/#/forms/readFormResponses)
+##### [form(id: string | number).responses(params?: Record<string, string>): Promise\<responses\>](https://docs.pushpay.io/chms-v2/reference/getformresponses)
 
 Returns a promise that resolves with a paginated list of responses to the form. Optional parameters can be passed to filter the results.
 
@@ -346,7 +399,7 @@ const responses = await ccb.form('123').responses({ status: 'completed' });
 
 ### Events
 
-##### [events.get(params?: Record<string, string | number>): Promise\<events\>](https://village.ccbchurch.com/documentation/#/events/readEvents)
+##### [events.get(params?: Record<string, string | number>): Promise\<events\>](https://docs.pushpay.io/chms-v2/reference/getevents)
 
 Returns a promise that resolves with a paginated list of events. Optional parameters can be passed to filter the results.
 
@@ -356,7 +409,7 @@ const events = await ccb.events.get({ start_date: '2024-01-01' });
 
 ### Church
 
-##### [church.get(params?: Record<string, string | number>): Promise\<church\>](https://village.ccbchurch.com/documentation/#/church/readChurch)
+##### [church.get(params?: Record<string, string | number>): Promise\<church\>](https://docs.pushpay.io/chms-v2/reference/getchurch)
 
 Returns a promise that resolves with the church's information. Optional parameters can be passed to filter the results.
 
@@ -364,7 +417,7 @@ Returns a promise that resolves with the church's information. Optional paramete
 const church = await ccb.church.get();
 ```
 
-##### [church.areasOfTown(params?: Record<string, string | number>): Promise\<areas\>](https://village.ccbchurch.com/documentation/#/church/readAreasOfTown)
+##### [church.areasOfTown(params?: Record<string, string | number>): Promise\<areas\>](https://docs.pushpay.io/chms-v2/reference/getareasoftown)
 
 Returns a promise that resolves with a list of areas of town associated with the church. Optional parameters can be passed to filter the results.
 
@@ -372,7 +425,7 @@ Returns a promise that resolves with a list of areas of town associated with the
 const areas = await ccb.church.areasOfTown();
 ```
 
-##### [church.schools(params?: Record<string, string | number>): Promise\<schools\>](https://village.ccbchurch.com/documentation/#/church/readSchools)
+##### [church.schools(params?: Record<string, string | number>): Promise\<schools\>](https://docs.pushpay.io/chms-v2/reference/getschools)
 
 Returns a promise that resolves with a list of schools associated with the church. Optional parameters can be passed to filter the results.
 
@@ -380,7 +433,7 @@ Returns a promise that resolves with a list of schools associated with the churc
 const schools = await ccb.church.schools();
 ```
 
-##### [church.schoolGrades(params?: Record<string, string | number>): Promise\<grades\>](https://village.ccbchurch.com/documentation/#/church/readSchoolGrades)
+##### [church.schoolGrades(params?: Record<string, string | number>): Promise\<grades\>](https://docs.pushpay.io/chms-v2/reference/getschoolgrades)
 
 Returns a promise that resolves with a list of school grades associated with the church. Optional parameters can be passed to filter the results.
 
@@ -388,7 +441,7 @@ Returns a promise that resolves with a list of school grades associated with the
 const grades = await ccb.church.schoolGrades();
 ```
 
-##### [church.attendanceGroupings(params?: Record<string, string | number>): Promise\<groupings\>](https://village.ccbchurch.com/documentation/#/church/readAttendanceGroupings)
+##### [church.attendanceGroupings(params?: Record<string, string | number>): Promise\<groupings\>](https://docs.pushpay.io/chms-v2/reference/getattendancegroupings)
 
 Returns a promise that resolves with a list of attendance groupings associated with the church. Optional parameters can be passed to filter the results.
 
@@ -396,7 +449,7 @@ Returns a promise that resolves with a list of attendance groupings associated w
 const groupings = await ccb.church.attendanceGroupings();
 ```
 
-##### [church.socialNetworks(params?: Record<string, string | number>): Promise\<networks\>](https://village.ccbchurch.com/documentation/#/church/readSocialNetworks)
+##### [church.socialNetworks(params?: Record<string, string | number>): Promise\<networks\>](https://docs.pushpay.io/chms-v2/reference/getsocialnetworks)
 
 Returns a promise that resolves with a list of social networks associated with the church. Optional parameters can be passed to filter the results.
 
@@ -404,7 +457,7 @@ Returns a promise that resolves with a list of social networks associated with t
 const networks = await ccb.church.socialNetworks();
 ```
 
-##### [church.mobileCarriers(params?: Record<string, string | number>): Promise\<carriers\>](https://village.ccbchurch.com/documentation/#/church/readMobileCarriers)
+##### [church.mobileCarriers(params?: Record<string, string | number>): Promise\<carriers\>](https://docs.pushpay.io/chms-v2/reference/getmobilecarriers)
 
 Returns a promise that resolves with a list of mobile carriers associated with the church. Optional parameters can be passed to filter the results.
 
@@ -412,7 +465,7 @@ Returns a promise that resolves with a list of mobile carriers associated with t
 const carriers = await ccb.church.mobileCarriers();
 ```
 
-##### [church.countries(params?: Record<string, string | number>): Promise\<countries\>](https://village.ccbchurch.com/documentation/#/church/readCountries)
+##### [church.countries(params?: Record<string, string | number>): Promise\<countries\>](https://docs.pushpay.io/chms-v2/reference/getcountries)
 
 Returns a promise that resolves with a list of countries associated with the church. Optional parameters can be passed to filter the results.
 
@@ -420,7 +473,7 @@ Returns a promise that resolves with a list of countries associated with the chu
 const countries = await ccb.church.countries();
 ```
 
-##### [church.membershipTypes(params?: Record<string, string | number>): Promise\<types\>](https://village.ccbchurch.com/documentation/#/church/readMembershipTypes)
+##### [church.membershipTypes(params?: Record<string, string | number>): Promise\<types\>](https://docs.pushpay.io/chms-v2/reference/getmembershiptypes)
 
 Returns a promise that resolves with a list of membership types associated with the church. Optional parameters can be passed to filter the results.
 
@@ -428,7 +481,7 @@ Returns a promise that resolves with a list of membership types associated with 
 const types = await ccb.church.membershipTypes();
 ```
 
-##### [church.services(params?: Record<string, string | number>): Promise\<services\>](https://village.ccbchurch.com/documentation/#/church/readServices)
+##### [church.services(params?: Record<string, string | number>): Promise\<services\>](https://docs.pushpay.io/chms-v2/reference/getservices)
 
 Returns a promise that resolves with a list of services associated with the church. Optional parameters can be passed to filter the results.
 
@@ -436,7 +489,7 @@ Returns a promise that resolves with a list of services associated with the chur
 const services = await ccb.church.services();
 ```
 
-##### [church.customFields(params?: Record<string, string | number>): Promise\<fields\>](https://village.ccbchurch.com/documentation/#/church/readCustomFields)
+##### [church.customFields(params?: Record<string, string | number>): Promise\<fields\>](https://docs.pushpay.io/chms-v2/reference/getcustomfields)
 
 Returns a promise that resolves with a list of custom fields associated with the church. Optional parameters can be passed to filter the results.
 
@@ -444,7 +497,7 @@ Returns a promise that resolves with a list of custom fields associated with the
 const fields = await ccb.church.customFields();
 ```
 
-##### [church.reasonsLeft(params?: Record<string, string | number>): Promise\<reasons\>](https://village.ccbchurch.com/documentation/#/church/readReasonsLeft)
+##### [church.reasonsLeft(params?: Record<string, string | number>): Promise\<reasons\>](https://docs.pushpay.io/chms-v2/reference/getreasonsleft)
 
 Returns a promise that resolves with a list of reasons for leaving associated with the church. Optional parameters can be passed to filter the results.
 
@@ -452,7 +505,7 @@ Returns a promise that resolves with a list of reasons for leaving associated wi
 const reasons = await ccb.church.reasonsLeft();
 ```
 
-##### [church.privacyDefaults(params?: Record<string, string | number>): Promise\<defaults\>](https://village.ccbchurch.com/documentation/#/church/readPrivacyDefaults)
+##### [church.privacyDefaults(params?: Record<string, string | number>): Promise\<defaults\>](https://docs.pushpay.io/chms-v2/reference/getprivacydefaults)
 
 Returns a promise that resolves with the privacy defaults associated with the church. Optional parameters can be passed to filter the results.
 
@@ -462,33 +515,61 @@ const defaults = await ccb.church.privacyDefaults();
 
 ### Search
 
-##### [search(type: string, config?: Record<string, any>).run(filters: SearchConstraint[]): Promise\<results\>](https://village.ccbchurch.com/documentation/#/search/runSearch)
+##### [search(type: string, config?: Record<string, any>).run(filters: SearchConstraint | SearchGroup): Promise\<results\>](https://docs.pushpay.io/chms-v2/reference/getindividualadvancedsearchresults)
 
 Runs a search with the specified type and filters. Returns a promise that resolves with the search results.
 
-```typescript
-const results = await ccb.search('individuals').run([
-    Search.filter('equals', 'first_name', 'John')
-]);
+`filters` is a single constraint or a single group. To combine several constraints, wrap them in `Search.group(...)`; the API rejects a bare array with a 412.
+
+The optional `config` is merged over these defaults, so pass only what you want to change:
+
+```javascript
+{
+    columns: [],
+    order_by: [{ column: 'last_name', direction: 'asc' }],
+    filter_profile_type: ['active'],
+    include_unlisted: true,
+    include_lau: true,
+    include_pending: true,
+    return_search_results: true,
+    return_family_positions: [],
+}
 ```
 
-##### [Search.group(operator: 'and' | 'or', constraints: SearchConstraint[], inverted?: boolean): SearchGroup](https://village.ccbchurch.com/documentation/#/search/runSearch)
+```typescript
+const everyone = await ccb.search('individuals', { filter_profile_type: ['active', 'inactive'] }).run(filters);
+```
+
+```typescript
+const results = await ccb.search('individuals').run(Search.filter('equal', 'first_name', 'John'));
+
+const both = await ccb.search('individuals').run(
+    Search.group('and', [
+        Search.filter('equal', 'first_name', 'John'),
+        Search.filter('equal', 'last_name', 'Doe')
+    ])
+);
+```
+
+##### [Search.group(operator: 'and' | 'or', constraints: SearchConstraint[], inverted?: boolean): SearchGroup](https://docs.pushpay.io/chms-v2/reference/getindividualadvancedsearchresults)
 
 Creates a search group that can be used to combine multiple search constraints with AND or OR operators.
 
 ```typescript
 const group = Search.group('and', [
-    Search.filter('equals', 'first_name', 'John'),
-    Search.filter('equals', 'last_name', 'Doe')
+    Search.filter('equal', 'first_name', 'John'),
+    Search.filter('equal', 'last_name', 'Doe')
 ]);
 ```
 
-##### [Search.filter(operator: ConstraintOperator, field: IndividualConstraintField, value: string, inverted?: boolean): SearchConstraint](https://village.ccbchurch.com/documentation/#/search/runSearch)
+##### [Search.filter(operator: ConstraintOperator, field: IndividualConstraintField, value: string, inverted?: boolean): SearchConstraint](https://docs.pushpay.io/chms-v2/reference/getindividualadvancedsearchresults)
 
 Creates a search constraint that can be used to filter search results.
 
+The `inverted` argument is sent to the API, but the live API currently ignores it on both constraints and groups. To exclude matches, use a negated operator instead (`not_equal`, `does_not_contain`, `not_like`, `not_in`, ...).
+
 ```typescript
-const filter = Search.filter('equals', 'first_name', 'John');
+const filter = Search.filter('equal', 'first_name', 'John');
 ```
 
 ## Types
@@ -499,10 +580,39 @@ const filter = Search.filter('equals', 'first_name', 'John');
 		church: 'village', // CCB subdomain of your church. Required.
 		client: '5a69aef2...', // CCB API UID from when you signed up for APIv2 access. Required.
 		secret: 'e5c3cc06...', // CCB API Secret from when you signed up for APIv2 access. Required.
-		code: 'e9fa51ea...', // Client authorization code received after completion of the first OAuth step. Not required if redirectURI parameter is set.
-		redirectURI: 'https://example.net/oauth/redirect/', //Your redirect url provided to CCB when you signed up for APIv2 access. Not required if code parameter is set.
+		code: 'e9fa51ea...', // Client authorization code. Not required if the redirectUri parameter is set.
+		redirectUri: 'https://example.net/oauth/redirect/', // Your redirect url provided to CCB when you signed up for APIv2 access. Not required if the code parameter is set.
+		grantType: 'client_credentials', // 'client_credentials' (default) or 'authorization_code'. Optional.
+		scope: ['read:individuals'], // Scopes to request during authorization, as a string or array. Optional.
+		state: 'abc123', // Value echoed back to your redirect URI. Optional.
+		identityAuth: false, // Authorize as the signed-in individual. Optional.
+		sandbox: false, // Use the sandbox servers. Optional.
+		maxRetries: 3, // Retries for rate-limited requests. Optional.
+		timeout: 60000, // Request timeout in milliseconds. Optional.
 		dataGetter: () => { return data; }, // Function to retrieve auth data from storage. Can return promise that resolves with AuthData or AuthData directly. Required.
 		dataSetter: (data) => { storage.write(data) } // Function to save AuthData to storage. Can return a promise for synchronous writes. Required.
+	}
+```
+
+#### AuthData
+```javascript
+	{
+		code: 'e9fa51ea...', // Authorization code, or null.
+		accessToken: '...', // Current access token, or null.
+		refreshToken: '...', // Refresh token (authorization_code grant only), or null.
+		tokenExpiration: '2026-01-01T12:00:00.000Z', // ISO timestamp after which the access token is renewed, or null.
+	}
+```
+
+#### CCBError
+```javascript
+	{
+		name: 'CCBError', // 'CCBAuthError' for token failures.
+		message: 'Not found.',
+		status: 404, // HTTP status, when the server responded.
+		body: {}, // Parsed response body, when the server responded.
+		retryAfter: 5, // Seconds to wait, on a 429.
+		code: 'invalid_grant', // OAuth error code. CCBAuthError only.
 	}
 ```
 
@@ -538,10 +648,12 @@ const filter = Search.filter('equals', 'first_name', 'John');
 
 #### ConstraintOperator
 ```javascript
-'equals' | 'not_equals' | 'contains' | 'not_contains' | 'starts_with' | 'ends_with' | 'greater_than' | 'less_than' | 'greater_than_or_equals' | 'less_than_or_equals' | 'is_null' | 'is_not_null' | 'is_empty' | 'is_not_empty' | 'is_true' | 'is_false' | 'in' | 'not_in' | 'between' | 'not_between'
+'between' | 'contains' | 'contains_like' | 'does_not_contain' | 'ends_with' | 'equal' | 'greater_than' | 'greater_than_or_equal' | 'in' | 'in_the_current' | 'in_the_last' | 'in_the_next' | 'in_the_previous' | 'in_the_upcoming' | 'is_not_set' | 'is_set' | 'less_than' | 'less_than_or_equal' | 'like' | 'not_between' | 'not_equal' | 'not_in' | 'not_in_the_current' | 'not_in_the_last' | 'not_in_the_next' | 'not_in_the_previous' | 'not_in_the_upcoming' | 'not_like' | 'starts_with' | 'word_boundary'
 ```
+
+Which operators apply depends on the field type. The date and number operators (`between`, `greater_than`, `in_the_last`, ...) come from the published specification; the text operators were checked against the live API.
 
 #### IndividualConstraintField
 ```javascript
-'id' | 'first_name' | 'last_name' | 'email' | 'phone' | 'address' | 'city' | 'state' | 'zip' | 'country' | 'birth_date' | 'anniversary' | 'gender' | 'marital_status' | 'family_position' | 'family_id' | 'family_name' | 'family_address' | 'family_city' | 'family_state' | 'family_zip' | 'family_country' | 'family_phone' | 'family_email' | 'family_website' | 'family_notes' | 'family_created' | 'family_modified' | 'family_created_by' | 'family_modified_by' | 'family_created_by_id' | 'family_modified_by_id' | 'family_created_by_name' | 'family_modified_by_name' | 'family_created_by_email' | 'family_modified_by_email' | 'family_created_by_phone' | 'family_modified_by_phone' | 'family_created_by_address' | 'family_modified_by_address' | 'family_created_by_city' | 'family_modified_by_city' | 'family_created_by_state' | 'family_modified_by_state' | 'family_created_by_zip' | 'family_modified_by_zip' | 'family_created_by_country' | 'family_modified_by_country' | 'family_created_by_birth_date' | 'family_modified_by_birth_date' | 'family_created_by_anniversary' | 'family_modified_by_anniversary' | 'family_created_by_gender' | 'family_modified_by_gender' | 'family_created_by_marital_status' | 'family_modified_by_marital_status' | 'family_created_by_family_position' | 'family_modified_by_family_position'
+'ability' | 'age' | 'allergies' | 'anniversary' | 'anniversary_date_parts' | 'anniversary_month' | 'area' | 'attendance_attendance_grouping' | 'attendance_department' | 'attendance_single_event' | 'barcode' | 'birth_date' | 'birth_date_parts' | 'birth_month' | 'campus' | 'child_work_approved_start_date' | 'child_work_approved_start_month' | 'child_work_approved_stop_date' | 'child_work_approved_stop_month' | 'church_service' | 'commitment_date' | 'commitment_story' | 'contact_phone_number' | 'creator_first_name' | 'creator_last_name' | 'current_story' | 'date_created' | 'date_created_month' | 'date_created_parts' | 'date_deceased' | 'date_deceased_month' | 'date_deceased_parts' | 'date_modified' | 'date_modified_month' | 'date_modified_parts' | 'discussion_posts' | 'email' | 'emergency_contact_number' | 'emergency_contact_phone_number' | 'event' | 'event_legacy' | 'family_child' | 'family_head' | 'family_id' | 'family_other' | 'family_photo' | 'family_position' | 'family_spouse' | 'fax_phone_number' | 'first_name' | 'form_question_answer' | 'gender' | 'giving_number' | 'group' | 'group_department' | 'group_name' | 'group_relationship' | 'group_search' | 'group_type' | 'group_udf_pulldown_1' | 'group_udf_pulldown_2' | 'group_udf_pulldown_3' | 'home_city' | 'home_country' | 'home_state' | 'home_street' | 'home_zip' | 'how_joined_church' | 'how_they_heard' | 'individual_id' | 'is_baptized' | 'is_confirmed_no_allergies' | 'is_home_listed' | 'is_inactive' | 'is_limited_access_user' | 'is_listed' | 'is_other_listed' | 'is_work_listed' | 'last_attended_date' | 'last_giving_date' | 'last_login_date' | 'last_login_date_parts' | 'last_name' | 'last_need_assigned_date' | 'legal_name' | 'login' | 'mailing_carrier_route' | 'mailing_city' | 'mailing_country' | 'mailing_state' | 'mailing_street' | 'mailing_zip' | 'marital_status' | 'membership_month' | 'membership_start_date' | 'membership_stop_date' | 'membership_type' | 'middle_name' | 'military' | 'mobile_carrier' | 'mobile_phone_number' | 'modifier_first_name' | 'modifier_last_name' | 'name' | 'new_giver' | 'other_city' | 'other_country' | 'other_id' | 'other_state' | 'other_street' | 'other_zip' | 'pager_phone_number' | 'passion' | 'personality_style' | 'photo' | 'pledge' | 'position' | 'process_queue' | 'process_queue_date' | 'reason_left_church' | 'school' | 'school_grade' | 'significant_event' | 'spiritual_gift' | 'spiritual_maturity' | 'sync_id' | 'transaction_amount' | 'udf_date_1' | 'udf_date_2' | 'udf_date_3' | 'udf_date_4' | 'udf_date_5' | 'udf_date_6' | 'udf_pulldown_1' | 'udf_pulldown_2' | 'udf_pulldown_3' | 'udf_pulldown_4' | 'udf_pulldown_5' | 'udf_pulldown_6' | 'udf_text_1' | 'udf_text_10' | 'udf_text_11' | 'udf_text_12' | 'udf_text_2' | 'udf_text_3' | 'udf_text_4' | 'udf_text_5' | 'udf_text_6' | 'udf_text_7' | 'udf_text_8' | 'udf_text_9' | 'work_city' | 'work_country' | 'work_state' | 'work_street' | 'work_zip'
 ```

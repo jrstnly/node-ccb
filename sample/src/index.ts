@@ -1,4 +1,4 @@
-import { CCB, Config, AuthData, Search } from '@jrstnly/ccb';
+import { CCB, CCBError, Config, AuthData, Search } from '@jrstnly/ccb';
 import { createReadStream } from 'fs';
 
 import * as dotenv from "dotenv";
@@ -38,7 +38,12 @@ try {
 		church:process.env.CCB_CHURCH || '',
 		client:process.env.CCB_CLIENT || '',
 		secret:process.env.CCB_SECRET || '',
+		code: process.env.CCB_CODE || '',
 		redirectUri: process.env.CCB_REDIRECT_URI || '',
+		// Optional settings:
+		//grantType: 'authorization_code', // documented flow with rotating refresh tokens (default is 'client_credentials')
+		//scope: ['read:individuals', 'read:groups'],
+		//sandbox: true,
 		dataGetter:dataGetter,
 		dataSetter:dataSetter
 	});
@@ -119,6 +124,55 @@ try {
 		/*
 		const search = await ccb.search('individuals').run(Search.filter('equal', 'first_name', 'JR'));
 		console.log(search);
+		*/
+
+		// ---------------------------------------------------------------------------------
+		// Full API: every endpoint is available under ccb.api, grouped as in the API
+		// reference. Arguments are path parameters, then body, then query.
+		// See docs/endpoints.md for the complete list.
+		// ---------------------------------------------------------------------------------
+
+		//const campuses = await ccb.api.campuses.getCampuses();
+		//console.log(campuses);
+
+		//const person = await ccb.api.individuals.getIndividual(3151);
+		//console.log(person);
+
+		//const matches = await ccb.api.individuals.getIndividuals({ name: 'JR', per_page: 100 });
+		//console.log(matches);
+
+		//const updated = await ccb.api.individuals.updateIndividual(73300, { first_name: 'Updated' });
+		//console.log(updated);
+
+		// Array filters are passed as arrays.
+		//const waiting = await ccb.api.processQueues.getStepIndividuals({ queue_ids: [321], statuses: ['WAITING'] });
+		//console.log(waiting);
+
+		// File uploads take a Buffer, a stream, or { data, filename, contentType }.
+		//const file = await ccb.api.files.uploadIndividualFile(73300, { file: createReadStream('form.pdf'), label: 'Signed form' });
+		//console.log(file);
+
+		// Walk every page of a list endpoint.
+		/*
+		for await (const group of ccb.paginate((page) => ccb.api.groups.getGroups(page), { per_page: 100 })) {
+			console.log(group.name);
+		}
+		*/
+
+		// Read the pagination and rate limit headers.
+		/*
+		const { data, pagination, rateLimit } = await ccb.request({ path: '/individuals', query: { page: 2 } });
+		console.log(data.length, pagination, rateLimit);
+		*/
+
+		// Errors from ccb.api and ccb.request carry the HTTP status and response body.
+		/*
+		try {
+			await ccb.api.individuals.getIndividual(999999999);
+		} catch (e) {
+			if (e instanceof CCBError && e.status === 404) console.log('Not found');
+			else throw e;
+		}
 		*/
 
 	} else {

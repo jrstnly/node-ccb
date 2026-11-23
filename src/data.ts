@@ -260,7 +260,8 @@ export class Data {
 			for (const key of Object.keys(params)) {
 				const value = (params as Record<string, unknown>)[key];
 				if (value === undefined || value === null) continue;
-				if (Array.isArray(value)) value.forEach((item) => search.append(key, String(item)));
+				// The API only accepts arrays in bracket form (`ids[]=1&ids[]=2`); plain repeated keys fail validation.
+				if (Array.isArray(value)) value.forEach((item) => search.append(key.endsWith('[]') ? key : `${key}[]`, String(item)));
 				else if (typeof value === 'object') search.append(key, JSON.stringify(value));
 				else search.append(key, String(value));
 			}

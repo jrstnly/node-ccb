@@ -3,7 +3,7 @@ import { Readable } from 'stream';
 /** A file to upload: raw bytes, a stream, or either with an explicit filename and content type. */
 export type FileInput = Buffer | Readable | { data: Buffer | Readable; filename?: string; contentType?: string };
 
-/** Query string parameters. Arrays are sent as repeated keys; `undefined` and `null` are omitted. */
+/** Query string parameters. Arrays are sent in bracket form (`key[]=a&key[]=b`); `undefined` and `null` are omitted. */
 export type QueryParams = object;
 
 export interface RequestConfig {
@@ -18,6 +18,12 @@ export interface RequestConfig {
 	headers?: Record<string, string>;
 	/** Timeout in milliseconds. */
 	timeout?: number;
+}
+
+/** The page to request from a list endpoint. */
+export interface PageQuery {
+	page: number;
+	per_page: 25 | 50 | 75 | 100;
 }
 
 /** Pagination details from the `x-*` response headers of list endpoints. */

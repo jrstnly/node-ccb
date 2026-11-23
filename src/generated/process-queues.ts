@@ -124,6 +124,8 @@ export type GetStepIndividualsQuery = {
 	statuses?: Array<ProcessQueueStatuses>;
 	/** Include individuals assigned to me or unassigned individuals. If this param is not provided, both will be included */
 	assignment?: ("ASSIGNED_TO_ME" | "UNASSIGNED");
+	/** Only return individuals in these queues. Not in the published specification; verified against the live API on 2026-11-23. */
+	queue_ids?: Array<number>;
 };
 
 /** Query parameters of `listQueues`. */

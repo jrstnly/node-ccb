@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const spec = JSON.parse(readFileSync(join(root, 'openapi/chms-api-specs.json'), 'utf8'));
+const overrides = JSON.parse(readFileSync(join(root, 'openapi/overrides.json'), 'utf8')).operations || {};
 const out = join(root, 'src/generated');
 
 const METHODS = ['get', 'post', 'put', 'patch', 'delete'];
@@ -120,9 +121,14 @@ for (const [path, item] of Object.entries(spec.paths)) {
 		seenIds.add(op.operationId);
 		const tag = (op.tags && op.tags[0]) || 'misc';
 		if (!groups.has(tag)) groups.set(tag, []);
-		groups.get(tag).push({ path, method, op, params: [...shared, ...(op.parameters || [])].map(deref) });
+		// Parameters the live API accepts but the published spec does not list (openapi/overrides.json).
+		const extra = overrides[op.operationId]?.parameters || [];
+		delete overrides[op.operationId];
+		groups.get(tag).push({ path, method, op, params: [...shared, ...(op.parameters || []), ...extra].map(deref) });
 	}
 }
+
+if (Object.keys(overrides).length) throw new Error(`openapi/overrides.json names unknown operations: ${Object.keys(overrides).join(', ')}`);
 
 function buildOperation({ path, method, op, params }) {
 	const name = camel(op.operationId);

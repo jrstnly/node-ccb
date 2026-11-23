@@ -1,0 +1,15 @@
+{
+	"$comment": "Additions to the published specification, applied by scripts/generate.mjs. Use this for behaviour the live API has but the spec does not describe. Keyed by operationId.",
+	"operations": {
+		"getStepIndividuals": {
+			"parameters": [
+				{
+					"name": "queue_ids",
+					"in": "query",
+					"description": "Only return individuals in these queues. Not in the published specification; verified against the live API on 2026-11-23.",
+					"schema": { "type": "array", "items": { "type": "integer" } }
+				}
+			]
+		}
+	}
+}

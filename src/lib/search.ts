@@ -14,11 +14,15 @@ export class Search {
 	private data: Data;
 	constructor(type: string, config: any = {}, data: Data) {
 		this.type = type;
-		this.config = { ...config, ...defaultSearchConfig };
+		this.config = { ...defaultSearchConfig, ...config };
 		this.data = data;
 	}
 
-	public run(filters: any[]) {
+	/**
+	 * Run the search. `filters` is a single constraint or a single group; to combine several
+	 * constraints wrap them in `Search.group(...)`. The API rejects a bare array.
+	 */
+	public run(filters: SearchGroup | SearchConstraint) {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const data = {
@@ -41,13 +45,17 @@ export class Search {
 			conditions: constraints
 		}
 	}
+	/**
+	 * Build a constraint. Note that the API currently ignores `inverted`; use a negated operator
+	 * (`not_equal`, `does_not_contain`, `not_like`, `not_in`, ...) to exclude matches.
+	 */
 	static filter(operator: ConstraintOperator, field: IndividualConstraintField, value: string, inverted = false): SearchConstraint {
 		return {
 			type: 'constraint',
 			id: field,
 			operator: operator,
 			value: value,
-			inverted: false,
+			inverted: inverted,
 		}
 	}
 

@@ -1,4 +1,4 @@
-export type ConstraintOperator = 'contains' | 'constains_like' | 'does_not_contain' | 'ends_with' | 'equal' | 'in' | 'is_not_set' | 'is_set' | 'like' | 'not_equal' | 'not_in' | 'not_like' | 'starts_with' | 'word_boundary'
+export type ConstraintOperator = 'between' | 'contains' | 'contains_like' | 'does_not_contain' | 'ends_with' | 'equal' | 'greater_than' | 'greater_than_or_equal' | 'in' | 'in_the_current' | 'in_the_last' | 'in_the_next' | 'in_the_previous' | 'in_the_upcoming' | 'is_not_set' | 'is_set' | 'less_than' | 'less_than_or_equal' | 'like' | 'not_between' | 'not_equal' | 'not_in' | 'not_in_the_current' | 'not_in_the_last' | 'not_in_the_next' | 'not_in_the_previous' | 'not_in_the_upcoming' | 'not_like' | 'starts_with' | 'word_boundary';
 export type IndividualConstraintField = 'ability'	| 'age' | 'allergies' | 'anniversary' | 'anniversary_date_parts'
     | 'anniversary_month' | 'area' | 'attendance_attendance_grouping' | 'attendance_department' | 'attendance_single_event'
     | 'barcode' | 'birth_date' | 'birth_date_parts' | 'birth_month' | 'campus' | 'child_work_approved_start_date'
